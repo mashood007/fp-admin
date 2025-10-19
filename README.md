@@ -282,10 +282,20 @@ Set all required environment variables in your deployment platform:
 - `BLOB_READ_WRITE_TOKEN` (from Vercel Blob Store)
 
 ### Build and Deploy
+
+**Important**: Ensure Prisma Client is generated during build:
 ```bash
-npm run build
+# The build script now includes prisma generate
+npm run build  # runs: prisma generate && next build
 npm start
 ```
+
+**For Vercel**: No configuration needed. Vercel will automatically:
+1. Install dependencies (runs `postinstall` script)
+2. Run the build command
+3. Deploy the application
+
+**Troubleshooting Production Issues**: See `PRODUCTION_FIX.md` for detailed debugging steps.
 
 ### Image Upload Configuration
 

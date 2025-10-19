@@ -4,19 +4,25 @@ import { prisma } from "@/lib/prisma";
 import ProductTable from "@/components/ProductTable";
 
 async function getProducts() {
-  const products = await prisma.product.findMany({
-    orderBy: {
-      createdAt: "desc",
-    },
-    include: {
-      images: {
-        orderBy: {
-          order: "asc",
+  try {
+    const products = await prisma.product.findMany({
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        images: {
+          orderBy: {
+            order: "asc",
+          },
         },
       },
-    },
-  });
-  return products;
+    });
+    return products;
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    // Return empty array instead of throwing
+    return [];
+  }
 }
 
 export default async function ProductsPage() {
