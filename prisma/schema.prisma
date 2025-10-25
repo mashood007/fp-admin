@@ -31,6 +31,7 @@ model Product {
   category    String?
   isActive    Boolean        @default(true)
   images      ProductImage[]
+  orderProducts OrderProduct[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
@@ -50,3 +51,164 @@ model ProductImage {
   @@map("product_images")
 }
  
+model CustomerUser {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String?  // Optional for social logins
+  name      String
+  phone     String?
+  
+  // Shipping Address
+  shippingAddress1 String?
+  shippingAddress2 String?
+  shippingCity     String?
+  shippingState    String?
+  shippingZip      String?
+  shippingCountry  String?
+  
+  // Billing Address (optional, can use shipping if same)
+  billingAddress1 String?
+  billingAddress2 String?
+  billingCity     String?
+  billingState    String?
+  billingZip      String?
+  billingCountry  String?
+  
+  // Account status
+  isActive    Boolean @default(true)
+  isVerified  Boolean @default(false)
+  
+  // Relations
+  orders    Order[]
+  checkouts Checkout[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("customer_users")
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  orderNumber String      @unique // Human-readable order number like ORD-2024-0001
+  
+  // Customer information
+  customerId String
+  customer   CustomerUser @relation(fields: [customerId], references: [id])
+  
+  // Order details
+  status        OrderStatus @default(PENDING)
+  subtotal      Float       // Sum of all order products
+  shippingCost  Float       @default(0)
+  taxAmount     Float       @default(0)
+  discountAmount Float      @default(0)
+  totalAmount   Float       // Final total after shipping, tax, discounts
+  
+  // Shipping information (captured at time of order)
+  shippingName     String
+  shippingEmail    String
+  shippingPhone    String?
+  shippingAddress1 String
+  shippingAddress2 String?
+  shippingCity     String
+  shippingState    String
+  shippingZip      String
+  shippingCountry  String
+  
+  // Order metadata
+  notes         String?   @db.Text
+  trackingNumber String?
+  shippedAt     DateTime?
+  deliveredAt   DateTime?
+  cancelledAt   DateTime?
+  cancelReason  String?
+  
+  // Relations
+  orderProducts OrderProduct[]
+  checkout      Checkout?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("orders")
+}
+
+model OrderProduct {
+  id String @id @default(cuid())
+  
+  // Relations
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  
+  // Product details at time of purchase (for historical accuracy)
+  productName        String
+  productDescription String? @db.Text
+  unitPrice          Float   // Price at time of purchase
+  quantity           Int
+  subtotal           Float   // unitPrice * quantity
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orderId, productId])
+  @@map("order_products")
+}
+
+model Checkout {
+  id String @id @default(cuid())
+  
+  // Relations
+  orderId    String      @unique
+  order      Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customerId String
+  customer   CustomerUser @relation(fields: [customerId], references: [id])
+  
+  // Payment information
+  paymentStatus     PaymentStatus @default(PENDING)
+  paymentMethod     String?       // 'card', 'cash', 'bank_transfer', etc.
+  paymentReference  String?       // Transaction ID from payment processor
+  paymentGateway    String?       // 'stripe', 'paypal', etc.
+  
+  // Billing information (captured at time of checkout)
+  billingName     String
+  billingEmail    String
+  billingAddress1 String
+  billingAddress2 String?
+  billingCity     String
+  billingState    String
+  billingZip      String
+  billingCountry  String
+  
+  // Checkout metadata
+  sessionId     String?   // Payment gateway session ID
+  completedAt   DateTime?
+  failedAt      DateTime?
+  failureReason String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("checkouts")
+}
+
+// Enums for order and payment status
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
