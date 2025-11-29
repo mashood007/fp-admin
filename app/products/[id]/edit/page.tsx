@@ -47,7 +47,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
             category: product.category || "",
             isActive: product.isActive,
           });
-          
+
           // Set images from product
           if (product.images && product.images.length > 0) {
             setImages(product.images.map((img: any) => ({
@@ -238,11 +238,15 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                   Category
                 </label>
                 <div className="mt-1">
-                  <input
-                    type="text"
+                  <select
                     {...register("category")}
                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                  />
+                  >
+                    <option value="">Select a category</option>
+                    <option value="men">Men</option>
+                    <option value="women">Women</option>
+                    <option value="unisex">Unisex</option>
+                  </select>
                 </div>
               </div>
 

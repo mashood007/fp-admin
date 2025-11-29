@@ -11,7 +11,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Get category filter from query parameters
+    const { searchParams } = new URL(request.url);
+    const category = searchParams.get("category");
+
+    // Build where clause for filtering
+    const whereClause: any = {};
+    if (category) {
+      whereClause.category = category;
+    }
+
     const products = await prisma.product.findMany({
+      where: whereClause,
       orderBy: {
         createdAt: "desc",
       },
