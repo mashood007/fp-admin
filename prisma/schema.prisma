@@ -32,6 +32,7 @@ model Product {
   isActive    Boolean        @default(true)
   images      ProductImage[]
   orderProducts OrderProduct[]
+  collections ProductCollection[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
@@ -191,6 +192,30 @@ model Checkout {
   updatedAt DateTime @updatedAt
 
   @@map("checkouts")
+}
+
+model Collection {
+  id          String              @id @default(cuid())
+  title       String
+  imageUrl    String?
+  description String?             @db.Text
+  products    ProductCollection[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@map("collections")
+}
+
+model ProductCollection {
+  id           String     @id @default(cuid())
+  productId    String
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  collectionId String
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([productId, collectionId])
+  @@map("product_collections")
 }
 
 // Enums for order and payment status

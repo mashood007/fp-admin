@@ -6,6 +6,7 @@ import {
   Bars3Icon,
   HomeIcon,
   ShoppingBagIcon,
+  RectangleStackIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
@@ -15,6 +16,7 @@ import { signOut } from "next-auth/react";
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
   { name: "Products", href: "/products", icon: ShoppingBagIcon },
+  { name: "Collections", href: "/collections", icon: RectangleStackIcon },
 ];
 
 function classNames(...classes: string[]) {

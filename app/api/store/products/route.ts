@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
     const search = searchParams.get("search");
+    const collectionId = searchParams.get("collection");
     const limit = searchParams.get("limit");
     const offset = searchParams.get("offset");
 
@@ -29,6 +30,14 @@ export async function GET(request: NextRequest) {
 
     if (category) {
       where.category = category;
+    }
+
+    if (collectionId) {
+      where.collections = {
+        some: {
+          collectionId: collectionId,
+        },
+      };
     }
 
     if (search) {
