@@ -7,6 +7,7 @@ import {
   HomeIcon,
   ShoppingBagIcon,
   RectangleStackIcon,
+  ClipboardDocumentListIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
@@ -15,6 +16,7 @@ import { signOut } from "next-auth/react";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
+  { name: "Orders", href: "/orders", icon: ClipboardDocumentListIcon },
   { name: "Products", href: "/products", icon: ShoppingBagIcon },
   { name: "Collections", href: "/collections", icon: RectangleStackIcon },
 ];
