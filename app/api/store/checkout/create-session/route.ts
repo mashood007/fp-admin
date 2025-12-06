@@ -136,8 +136,20 @@ export async function POST(request: NextRequest) {
 
         const storeFrontUrl = process.env.STORE_FRONT_URL || "http://localhost:3001";
 
+        // Create a Stripe coupon if the order has a discount
+        let stripeCouponId: string | undefined;
+        if (order.couponDiscount && order.couponDiscount > 0) {
+            const coupon = await stripe.coupons.create({
+                amount_off: Math.round(order.couponDiscount * 100), // Convert to cents
+                currency: STRIPE_CONFIG.currency,
+                duration: 'once',
+                name: order.couponCode ? `Coupon: ${order.couponCode}` : 'Discount',
+            });
+            stripeCouponId = coupon.id;
+        }
+
         // Create Stripe Checkout Session
-        const session = await stripe.checkout.sessions.create({
+        const sessionParams: any = {
             payment_method_types: ['card' as any],
             line_items: lineItems,
             mode: "payment",
@@ -148,7 +160,16 @@ export async function POST(request: NextRequest) {
                 orderId: order.id,
                 orderNumber: order.orderNumber,
             },
-        });
+        };
+
+        // Apply discount if coupon was created
+        if (stripeCouponId) {
+            sessionParams.discounts = [{
+                coupon: stripeCouponId,
+            }];
+        }
+
+        const session = await stripe.checkout.sessions.create(sessionParams);
 
         // Create or update checkout record
         const checkout = await prisma.checkout.upsert({

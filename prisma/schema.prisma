@@ -105,6 +105,12 @@ model Order {
   discountAmount Float      @default(0)
   totalAmount   Float       // Final total after shipping, tax, discounts
   
+  // Coupon information
+  couponId       String?  // Foreign key to applied coupon
+  coupon         Coupon?  @relation(fields: [couponId], references: [id])
+  couponCode     String?  // Snapshot of coupon code at time of order
+  couponDiscount Float    @default(0) // Discount amount from coupon
+  
   // Shipping information (captured at time of order)
   shippingName     String
   shippingEmail    String
@@ -216,6 +222,23 @@ model ProductCollection {
 
   @@unique([productId, collectionId])
   @@map("product_collections")
+}
+
+model Coupon {
+  id              String   @id @default(cuid())
+  code            String   @unique // Coupon code (uppercase)
+  description     String?  @db.Text
+  discountPercent Float    // Percentage discount (0-100)
+  expiresAt       DateTime // Expiration date and time
+  isActive        Boolean  @default(true)
+  
+  // Relations
+  orders          Order[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("coupons")
 }
 
 // Enums for order and payment status

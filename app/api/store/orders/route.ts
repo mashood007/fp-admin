@@ -129,6 +129,7 @@ export async function POST(request: NextRequest) {
       items, // Array of { productId, quantity }
       shippingAddress,
       notes,
+      couponCode, // Optional coupon code
     } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -178,10 +179,10 @@ export async function POST(request: NextRequest) {
     const orderProducts = items.map(item => {
       const product = products.find(p => p.id === item.productId);
       if (!product) throw new Error("Product not found");
-      
+
       const itemSubtotal = product.price * item.quantity;
       subtotal += itemSubtotal;
-      
+
       return {
         productId: product.id,
         productName: product.name,
@@ -192,9 +193,46 @@ export async function POST(request: NextRequest) {
       };
     });
 
+    // Verify and apply coupon if provided
+    let couponId: string | null = null;
+    let appliedCouponCode: string | null = null;
+    let couponDiscount = 0;
+
+    if (couponCode && couponCode.trim()) {
+      const coupon = await prisma.coupon.findUnique({
+        where: { code: couponCode.trim().toUpperCase() },
+      });
+
+      if (!coupon) {
+        return NextResponse.json(
+          { error: "Invalid coupon code" },
+          { status: 400, headers: corsHeaders() }
+        );
+      }
+
+      if (!coupon.isActive) {
+        return NextResponse.json(
+          { error: "Coupon is no longer active" },
+          { status: 400, headers: corsHeaders() }
+        );
+      }
+
+      if (new Date(coupon.expiresAt) <= new Date()) {
+        return NextResponse.json(
+          { error: "Coupon has expired" },
+          { status: 400, headers: corsHeaders() }
+        );
+      }
+
+      // Apply discount
+      couponId = coupon.id;
+      appliedCouponCode = coupon.code;
+      couponDiscount = (subtotal * coupon.discountPercent) / 100;
+    }
+
     const shippingCost = 0; // TODO: Calculate based on location/weight
     const taxAmount = 0; // TODO: Calculate tax
-    const discountAmount = 0; // TODO: Apply discounts
+    const discountAmount = couponDiscount;
     const totalAmount = subtotal + shippingCost + taxAmount - discountAmount;
 
     // Create order with transaction
@@ -210,6 +248,9 @@ export async function POST(request: NextRequest) {
           taxAmount,
           discountAmount,
           totalAmount,
+          couponId,
+          couponCode: appliedCouponCode,
+          couponDiscount,
           shippingName: shippingAddress.name,
           shippingEmail: shippingAddress.email || customer.email,
           shippingPhone: shippingAddress.phone,
