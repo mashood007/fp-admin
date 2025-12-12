@@ -9,6 +9,7 @@ async function getOrders() {
             },
             include: {
                 customer: true,
+                checkout: true,
             },
         });
         return orders;
