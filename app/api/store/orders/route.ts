@@ -231,7 +231,7 @@ export async function POST(request: NextRequest) {
     }
 
     const shippingCost = 0; // TODO: Calculate based on location/weight
-    const taxAmount = 0; // TODO: Calculate tax
+    const taxAmount = subtotal * 0.05; // 5% VAT exclusive on subtotal
     const discountAmount = couponDiscount;
     const totalAmount = subtotal + shippingCost + taxAmount - discountAmount;
 
