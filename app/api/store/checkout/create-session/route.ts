@@ -160,6 +160,12 @@ export async function POST(request: NextRequest) {
                 orderId: order.id,
                 orderNumber: order.orderNumber,
             },
+            payment_intent_data: {
+                metadata: {
+                    orderId: order.id,
+                    orderNumber: order.orderNumber,
+                },
+            },
         };
 
         // Apply discount if coupon was created

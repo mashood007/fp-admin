@@ -61,13 +61,13 @@ export async function POST(request: NextRequest) {
 
             case "payment_intent.succeeded": {
                 const paymentIntent = event.data.object as Stripe.PaymentIntent;
-                console.log("Payment intent succeeded:", paymentIntent.id);
+                await handlePaymentIntentSucceeded(paymentIntent);
                 break;
             }
 
             case "payment_intent.payment_failed": {
                 const paymentIntent = event.data.object as Stripe.PaymentIntent;
-                console.log("Payment intent failed:", paymentIntent.id);
+                await handlePaymentIntentPaymentFailed(paymentIntent);
                 break;
             }
 
@@ -159,6 +159,81 @@ async function handleCheckoutSessionExpired(session: Stripe.Checkout.Session) {
 
     } catch (error) {
         console.error("Error handling checkout session expired:", error);
+        throw error;
+    }
+}
+
+// Handle successful payment intent
+async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
+    try {
+        const orderId = paymentIntent.metadata?.orderId;
+
+        if (!orderId) {
+            console.error("No orderId in payment intent metadata");
+            return;
+        }
+
+        console.log(`Processing payment intent success for order: ${orderId}`);
+
+        // Update checkout and order in a transaction
+        await prisma.$transaction(async (tx) => {
+            // Update checkout record
+            await tx.checkout.updateMany({
+                where: {
+                    orderId,
+                },
+                data: {
+                    paymentStatus: "COMPLETED",
+                    paymentReference: paymentIntent.id,
+                    completedAt: new Date(),
+                },
+            });
+
+            // Update order status
+            await tx.order.update({
+                where: { id: orderId },
+                data: {
+                    status: "CONFIRMED",
+                },
+            });
+        });
+
+        console.log(`Successfully processed payment intent for order: ${orderId}`);
+
+    } catch (error) {
+        console.error("Error handling payment intent succeeded:", error);
+        throw error;
+    }
+}
+
+// Handle failed payment intent
+async function handlePaymentIntentPaymentFailed(paymentIntent: Stripe.PaymentIntent) {
+    try {
+        const orderId = paymentIntent.metadata?.orderId;
+
+        if (!orderId) {
+            console.error("No orderId in payment intent metadata");
+            return;
+        }
+
+        console.log(`Processing payment intent failure for order: ${orderId}`);
+
+        // Update checkout record to mark as failed
+        await prisma.checkout.updateMany({
+            where: {
+                orderId,
+            },
+            data: {
+                paymentStatus: "FAILED",
+                failedAt: new Date(),
+                failureReason: paymentIntent.last_payment_error?.message || "Payment failed",
+            },
+        });
+
+        console.log(`Marked checkout as failed for order: ${orderId}`);
+
+    } catch (error) {
+        console.error("Error handling payment intent failed:", error);
         throw error;
     }
 }
