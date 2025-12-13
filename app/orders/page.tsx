@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import OrderTable from "@/components/OrderTable";
+export const dynamic = 'force-dynamic';
 
 async function getOrders() {
     try {

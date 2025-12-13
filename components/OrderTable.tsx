@@ -17,6 +17,7 @@ interface Order {
     checkout?: {
         paymentStatus: string;
     } | null;
+    invoiceUrl?: string | null;
 }
 
 interface OrderTableProps {
@@ -73,6 +74,12 @@ export default function OrderTable({ orders }: OrderTableProps) {
                                         className="relative py-3.5 pl-3 pr-4 sm:pr-6"
                                     >
                                         <span className="sr-only">Actions</span>
+                                    </th>
+                                    <th
+                                        scope="col"
+                                        className="relative py-3.5 pl-3 pr-4 sm:pr-6"
+                                    >
+                                        <span className="sr-only">Invoice</span>
                                     </th>
                                 </tr>
                             </thead>
@@ -138,6 +145,18 @@ export default function OrderTable({ orders }: OrderTableProps) {
                                                     <EyeIcon className="inline-block h-5 w-5" />
                                                     <span className="sr-only">View</span>
                                                 </Link>
+                                            </td>
+                                            <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                                                {order.invoiceUrl && (
+                                                    <a
+                                                        href={order.invoiceUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-indigo-600 hover:text-indigo-900"
+                                                    >
+                                                        Download
+                                                    </a>
+                                                )}
                                             </td>
                                         </tr>
                                     ))

@@ -3,6 +3,8 @@ import { PlusIcon } from "@heroicons/react/20/solid";
 import { prisma } from "@/lib/prisma";
 import ProductTable from "@/components/ProductTable";
 
+export const dynamic = 'force-dynamic';
+
 async function getProducts() {
   try {
     const products = await prisma.product.findMany({

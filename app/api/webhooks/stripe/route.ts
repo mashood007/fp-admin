@@ -98,6 +98,45 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
         console.log(`Processing completed checkout for order: ${orderId}`);
 
+        // Create Invoice
+        let invoiceId: string | null = null;
+        let invoiceUrl: any | null = null;
+
+        if (session.customer) {
+            try {
+                const customerId = session.customer as string;
+
+                // Create an invoice item for the order
+                // We can use the total amount from the session
+                if (session.amount_total) {
+                    await stripe.invoiceItems.create({
+                        customer: customerId,
+                        amount: session.amount_total,
+                        currency: session.currency || 'usd',
+                        description: `Order #${orderId}`,
+                    });
+
+                    // Create the invoice
+                    const invoice = await stripe.invoices.create({
+                        customer: customerId,
+                        auto_advance: true, // Auto-finalize
+                        collection_method: 'charge_automatically',
+                    });
+
+                    // Finalize the invoice immediately to get the URL
+                    const finalizedInvoice = await stripe.invoices.finalizeInvoice(invoice.id);
+
+                    invoiceId = finalizedInvoice.id;
+                    invoiceUrl = finalizedInvoice.hosted_invoice_url;
+
+                    console.log(`Created invoice: ${invoiceId}`);
+                }
+            } catch (invoiceError) {
+                console.error("Error creating invoice:", invoiceError);
+                // Continue processing order even if invoice fails
+            }
+        }
+
         // Update checkout and order in a transaction
         await prisma.$transaction(async (tx) => {
             // Update checkout record
@@ -118,7 +157,9 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
                 where: { id: orderId },
                 data: {
                     status: "CONFIRMED",
-                },
+                    invoiceId,
+                    invoiceUrl,
+                } as any,
             });
         });
 

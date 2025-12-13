@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PlusIcon } from "@heroicons/react/20/solid";
 import { prisma } from "@/lib/prisma";
 import CollectionCard from "@/components/CollectionCard";
+export const dynamic = 'force-dynamic';
 
 async function getCollections() {
     try {

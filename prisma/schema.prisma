@@ -130,6 +130,10 @@ model Order {
   cancelledAt   DateTime?
   cancelReason  String?
   
+  // Invoice information
+  invoiceId     String?
+  invoiceUrl    String?
+  
   // Relations
   orderProducts OrderProduct[]
   checkout      Checkout?
