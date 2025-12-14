@@ -264,6 +264,32 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
                     status: "CONFIRMED",
                 },
             });
+
+            // HERE IS THE PLACE WHERE WE WILL INITIATE DELIVERY
+            try {
+                const order = await prisma.order.findUnique({
+                    where: { id: orderId },
+                });
+
+                if (order && order.status === "CONFIRMED") {
+                    console.log(`Initiating delivery for order: ${orderId}`);
+                    const deliveryResult = await createDeliveryForOrder(order);
+
+                    await prisma.deliveryOrder.create({
+                        data: {
+                            orderId: orderId,
+                            airwayBillNumber: deliveryResult.AirwayBillNumber,
+                            destinationCode: deliveryResult.DestinationCode,
+                            apiResponse: JSON.stringify(deliveryResult),
+                            status: "GENERATED"
+                        }
+                    });
+                    console.log(`Delivery initiated successfully. AWB: ${deliveryResult.AirwayBillNumber}`);
+                }
+            } catch (deliveryError) {
+                console.error("Failed to initiate delivery:", deliveryError);
+                // We don't throw here to avoid failing the webhook response for the payment
+            }
         });
 
         console.log(`Successfully processed payment intent for order: ${orderId}`);
