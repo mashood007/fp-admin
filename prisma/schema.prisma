@@ -137,6 +137,7 @@ model Order {
   // Relations
   orderProducts OrderProduct[]
   checkout      Checkout?
+  deliveryOrder DeliveryOrder?
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -263,4 +264,28 @@ enum PaymentStatus {
   FAILED
   CANCELLED
   REFUNDED
+}
+
+model DeliveryOrder {
+  id        String   @id @default(cuid())
+  
+  // Relations
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  // Delivery details
+  airwayBillNumber String
+  destinationCode  String?
+  
+  // Tracking
+  status           String?
+  lastTrackingUpdate DateTime?
+  
+  // API Response data
+  apiResponse      String?  @db.Text
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("delivery_orders")
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import { createDeliveryForOrder } from "@/lib/delivery";
 import Stripe from "stripe";
 
 // Disable body parsing for webhook - we need raw body
@@ -162,6 +163,32 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
                 } as any,
             });
         });
+
+        // Initiate Delivery
+        try {
+            const order = await prisma.order.findUnique({
+                where: { id: orderId },
+            });
+
+            if (order) {
+                console.log(`Initiating delivery for order: ${orderId}`);
+                const deliveryResult = await createDeliveryForOrder(order);
+
+                await prisma.deliveryOrder.create({
+                    data: {
+                        orderId: orderId,
+                        airwayBillNumber: deliveryResult.AirwayBillNumber,
+                        destinationCode: deliveryResult.DestinationCode,
+                        apiResponse: JSON.stringify(deliveryResult),
+                        status: "GENERATED"
+                    }
+                });
+                console.log(`Delivery initiated successfully. AWB: ${deliveryResult.AirwayBillNumber}`);
+            }
+        } catch (deliveryError) {
+            console.error("Failed to initiate delivery:", deliveryError);
+            // We don't throw here to avoid failing the webhook response for the payment
+        }
 
         console.log(`Successfully processed payment for order: ${orderId}`);
 
