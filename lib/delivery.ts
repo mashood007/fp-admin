@@ -23,9 +23,39 @@ interface CreateAirwayBillInput {
     origin: string;
     productType: string;
     weight: number;
-    customerName?: string;
-    customerPhone?: string;
-    customerAddress?: string;
+    // Receiver Details
+    receiversAddress1: string;
+    receiversAddress2: string;
+    receiversCity: string;
+    receiversSubCity?: string;
+    receiversCountry: string;
+    receiversCompany?: string;
+    receiversContactPerson: string;
+    receiversEmail: string;
+    receiversGeoLocation?: string;
+    receiversMobile: string;
+    receiversPhone: string;
+    receiversPinCode?: string;
+    // Sender Details
+    sendersAddress1: string;
+    sendersAddress2: string;
+    sendersCity: string;
+    sendersCountry: string;
+    sendersCompany: string;
+    sendersContactPerson: string;
+    sendersEmail: string;
+    sendersMobile: string;
+    sendersPhone: string;
+    sendersPinCode?: string;
+    // Shipment Details
+    shipmentDimension?: string;
+    shipmentInvoiceCurrency: string;
+    shipmentInvoiceValue: number;
+    shipperReference: string;
+    shipperVatAccount?: string;
+    specialInstruction?: string;
+    codAmount?: number;
+    codCurrency?: string;
 }
 
 interface CreateAirwayBillResponse {
@@ -38,18 +68,44 @@ interface CreateAirwayBillResponse {
 export async function createAirwayBill(data: CreateAirwayBillInput): Promise<CreateAirwayBillResponse> {
     const payload = {
         AirwayBillData: {
+            CODAmount: data.codAmount || 0,
+            CODCurrency: data.codCurrency || "",
             Destination: data.destination,
+            DutyConsigneePay: "0",
             GoodsDescription: data.goodsDescription,
             NumberofPeices: data.numberOfPieces,
             Origin: data.origin,
             ProductType: data.productType,
-            ServiceType: "NOR", // Added based on error and RateCalculator example
+            ReceiversAddress1: data.receiversAddress1,
+            ReceiversAddress2: data.receiversAddress2,
+            ReceiversCity: data.receiversCity,
+            ReceiversSubCity: data.receiversSubCity || "",
+            ReceiversCountry: data.receiversCountry,
+            ReceiversCompany: data.receiversCompany || "",
+            ReceiversContactPerson: data.receiversContactPerson,
+            ReceiversEmail: data.receiversEmail,
+            ReceiversGeoLocation: data.receiversGeoLocation || "",
+            ReceiversMobile: data.receiversMobile,
+            ReceiversPhone: data.receiversPhone,
+            ReceiversPinCode: data.receiversPinCode || "",
+            SendersAddress1: data.sendersAddress1,
+            SendersAddress2: data.sendersAddress2,
+            SendersCity: data.sendersCity,
+            SendersCountry: data.sendersCountry,
+            SendersCompany: data.sendersCompany,
+            SendersContactPerson: data.sendersContactPerson,
+            SendersEmail: data.sendersEmail,
+            SendersMobile: data.sendersMobile,
+            SendersPhone: data.sendersPhone,
+            SendersPinCode: data.sendersPinCode || "",
+            ServiceType: "NOR",
+            ShipmentDimension: data.shipmentDimension || "15X20X25",
+            ShipmentInvoiceCurrency: data.shipmentInvoiceCurrency,
+            ShipmentInvoiceValue: data.shipmentInvoiceValue,
+            ShipperReference: data.shipperReference,
+            ShipperVatAccount: data.shipperVatAccount || "",
+            SpecialInstruction: data.specialInstruction || "",
             Weight: data.weight,
-            // Add extra fields if API supports them for delivery details, 
-            // based on doc it seems we only have these in AirwayBillData
-            // But usually we need receiver details. 
-            // The doc example shows limited fields. 
-            // Let's assume for now we stick to the doc example.
         },
         UserName: config.userName,
         Password: config.password,
@@ -85,17 +141,41 @@ export async function createAirwayBill(data: CreateAirwayBillInput): Promise<Cre
 
 export async function createDeliveryForOrder(order: any) {
     // Map order to delivery input
-    // This is a simplified mapping. Adjust based on actual business logic.
     const input: CreateAirwayBillInput = {
-        destination: order.shippingCity || "Unknown",
+        destination: order.shippingCity || "Dubai",
         goodsDescription: `Order #${order.orderNumber}`,
-        numberOfPieces: 1, // Logic to calculate pieces
-        origin: "DXB", // Default origin
+        numberOfPieces: 1,
+        origin: "DXB",
         productType: "XPS",
         weight: 1, // Default weight
-        customerName: order.shippingName,
-        customerPhone: order.shippingPhone,
-        customerAddress: `${order.shippingAddress1} ${order.shippingAddress2 || ""}`,
+
+        // Receiver Details
+        receiversAddress1: order.shippingAddress1,
+        receiversAddress2: order.shippingAddress2,
+        receiversCity: order.shippingCity,
+        receiversCountry: order.shippingCountry,
+        receiversCompany: order.shippingCompany,
+        receiversContactPerson: order.shippingName,
+        receiversEmail: order.email,
+        receiversMobile: order.shippingPhone,
+        receiversPhone: order.shippingPhone,
+        receiversPinCode: order.shippingZip,
+
+        // Sender Details - Using defaults/sample values as we don't have these in config yet
+        sendersAddress1: "Ho. Al Musallah",
+        sendersAddress2: "",
+        sendersCity: "Sharjah",
+        sendersCountry: "AE",
+        sendersCompany: "Azizia International FZE",
+        sendersContactPerson: "Anshid",
+        sendersEmail: "admin@fleurdorparfums.com",
+        sendersMobile: "971569298916",
+        sendersPhone: "971569298916",
+
+        // Shipment Details
+        shipmentInvoiceCurrency: "AED",
+        shipmentInvoiceValue: order.total || 0,
+        shipperReference: order.orderNumber || Date.now().toString(),
     };
 
     return createAirwayBill(input);
