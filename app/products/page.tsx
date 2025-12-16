@@ -8,9 +8,10 @@ export const dynamic = 'force-dynamic';
 async function getProducts() {
   try {
     const products = await prisma.product.findMany({
-      orderBy: {
-        orderNumber: "asc",
-      },
+      orderBy: [
+        { orderNumber: "asc" },
+        { name: "asc" },
+      ],
       include: {
         images: {
           orderBy: {

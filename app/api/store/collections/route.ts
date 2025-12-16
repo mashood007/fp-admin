@@ -60,6 +60,7 @@ export async function GET(request: NextRequest) {
                 productCount: collection.products.length,
                 createdAt: collection.createdAt,
                 updatedAt: collection.updatedAt,
+                name: collection.name,
             }))
             .filter((collection: any) => collection.productCount > 0); // Only return collections with active products
 

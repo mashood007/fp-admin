@@ -23,10 +23,10 @@ export async function GET(request: NextRequest) {
 
     const products = await prisma.product.findMany({
       where: whereClause,
-      orderBy: {
-        orderNumber: "asc",
-        name: "asc",
-      },
+      orderBy: [
+        { orderNumber: "asc" },
+        { name: "asc" },
+      ],
       include: {
         images: {
           orderBy: {

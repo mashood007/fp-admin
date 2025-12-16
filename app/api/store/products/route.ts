@@ -63,10 +63,10 @@ export async function GET(request: NextRequest) {
     // Fetch products with pagination
     const products = await prisma.product.findMany({
       where,
-      orderBy: {
-        orderNumber: "asc",
-        name: "asc",
-      },
+      orderBy: [
+        { orderNumber: "asc" },
+        { name: "asc" },
+      ],
       include: {
         images: {
           orderBy: {
