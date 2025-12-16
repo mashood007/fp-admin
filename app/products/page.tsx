@@ -9,7 +9,7 @@ async function getProducts() {
   try {
     const products = await prisma.product.findMany({
       orderBy: {
-        createdAt: "desc",
+        orderNumber: "asc",
       },
       include: {
         images: {

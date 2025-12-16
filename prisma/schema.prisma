@@ -28,9 +28,11 @@ model Product {
   name        String
   description String?        @db.Text
   price       Float
-  category    String?
-  isActive    Boolean        @default(true)
-  images      ProductImage[]
+  category       String?
+  isActive       Boolean        @default(true)
+  availableStock Int            @default(1)
+  orderNumber    Int            @default(0)
+  images         ProductImage[]
   orderProducts OrderProduct[]
   collections ProductCollection[]
   createdAt   DateTime       @default(now())

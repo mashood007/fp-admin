@@ -20,6 +20,7 @@ interface Product {
   price: number;
   category: string | null;
   isActive: boolean;
+  orderNumber: number;
   images: ProductImage[];
   createdAt: Date;
   updatedAt: Date;
@@ -32,6 +33,9 @@ interface ProductTableProps {
 export default function ProductTable({ products }: ProductTableProps) {
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
+  const [editingOrderValue, setEditingOrderValue] = useState<number>(0);
+  const [savingOrderId, setSavingOrderId] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this product?")) {
@@ -53,6 +57,41 @@ export default function ProductTable({ products }: ProductTableProps) {
       alert("An error occurred");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const startEditingOrder = (productId: string, currentOrder: number) => {
+    setEditingOrderId(productId);
+    setEditingOrderValue(currentOrder);
+  };
+
+  const cancelEditingOrder = () => {
+    setEditingOrderId(null);
+    setEditingOrderValue(0);
+  };
+
+  const saveOrderNumber = async (productId: string) => {
+    setSavingOrderId(productId);
+    try {
+      const response = await fetch(`/api/products/${productId}/order`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ orderNumber: editingOrderValue }),
+      });
+
+      if (response.ok) {
+        router.refresh();
+        setEditingOrderId(null);
+        setEditingOrderValue(0);
+      } else {
+        alert("Failed to update order number");
+      }
+    } catch (error) {
+      alert("An error occurred while updating order number");
+    } finally {
+      setSavingOrderId(null);
     }
   };
 
@@ -81,6 +120,12 @@ export default function ProductTable({ products }: ProductTableProps) {
                     className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                   >
                     Images
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                  >
+                    Order
                   </th>
                   <th
                     scope="col"
@@ -139,6 +184,39 @@ export default function ProductTable({ products }: ProductTableProps) {
                           </div>
                         ) : (
                           <span className="text-gray-400">No images</span>
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        {editingOrderId === product.id ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              value={editingOrderValue}
+                              onChange={(e) => setEditingOrderValue(parseInt(e.target.value) || 0)}
+                              className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                              min="0"
+                            />
+                            <button
+                              onClick={() => saveOrderNumber(product.id)}
+                              disabled={savingOrderId === product.id}
+                              className="text-green-600 hover:text-green-900 disabled:opacity-50"
+                            >
+                              ✓
+                            </button>
+                            <button
+                              onClick={cancelEditingOrder}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => startEditingOrder(product.id, product.orderNumber)}
+                            className="text-indigo-600 hover:text-indigo-900 hover:underline"
+                          >
+                            {product.orderNumber}
+                          </button>
                         )}
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">

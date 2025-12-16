@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     const products = await prisma.product.findMany({
       where,
       orderBy: {
-        createdAt: "desc",
+        orderNumber: "asc",
       },
       include: {
         images: {
