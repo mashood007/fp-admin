@@ -230,8 +230,14 @@ export async function POST(request: NextRequest) {
       couponDiscount = (subtotal * coupon.discountPercent) / 100;
     }
 
-    const shippingCost = 0; // TODO: Calculate based on location/weight
-    const taxAmount = subtotal * 0.05; // 5% VAT exclusive on subtotal
+    // Calculate taxable amount first (after coupon discount)
+    const taxableAmount = Math.max(0, subtotal - couponDiscount);
+
+    // Calculate shipping cost: Free for orders >= 250 AED, otherwise 15 AED
+    // Shipping is calculated based on taxable amount (after discount)
+    const shippingCost = taxableAmount >= 250 ? 0 : 15;
+
+    const taxAmount = (taxableAmount) * 0.05; // 5% VAT on taxable amount + shipping
     const discountAmount = couponDiscount;
     const totalAmount = subtotal + shippingCost + taxAmount - discountAmount;
 

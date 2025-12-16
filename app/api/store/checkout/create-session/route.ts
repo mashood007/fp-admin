@@ -105,19 +105,37 @@ export async function POST(request: NextRequest) {
         }));
 
         // Add shipping cost if any
-        if (order.shippingCost > 0) {
-            lineItems.push({
-                price_data: {
-                    currency: STRIPE_CONFIG.currency,
-                    product_data: {
-                        name: "Shipping",
-                        description: undefined,
-                    },
-                    unit_amount: Math.round(order.shippingCost * 100),
-                },
-                quantity: 1,
-            });
+        // Shipping is free for orders >= 250 AED (after discount), otherwise 15 AED
+        // Validate shipping cost calculation
+        const taxableAmount = order.subtotal - order.discountAmount;
+        const expectedShippingCost = taxableAmount >= 250 ? 0 : 15;
+
+        console.log(`Order ${order.orderNumber} shipping debug:`, {
+            subtotal: order.subtotal,
+            discountAmount: order.discountAmount,
+            taxableAmount,
+            shippingCost: order.shippingCost,
+            expectedShippingCost,
+            taxAmount: order.taxAmount,
+            totalAmount: order.totalAmount
+        });
+
+        if (Math.abs(order.shippingCost - expectedShippingCost) > 0.01) {
+            console.warn(`Shipping cost mismatch for order ${order.orderNumber}: expected ${expectedShippingCost}, got ${order.shippingCost}`);
         }
+
+        // Always add shipping as a line item to show on Stripe checkout
+        lineItems.push({
+            price_data: {
+                currency: STRIPE_CONFIG.currency,
+                product_data: {
+                    name: order.shippingCost === 0 ? "Shipping (Free)" : "Shipping",
+                    description: undefined,
+                },
+                unit_amount: Math.round(order.shippingCost * 100),
+            },
+            quantity: 1,
+        });
 
         // Add tax if any
         if (order.taxAmount > 0) {
