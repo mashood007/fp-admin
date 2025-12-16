@@ -270,8 +270,9 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
                 const order = await prisma.order.findUnique({
                     where: { id: orderId },
                 });
+                console.log(`order DATA: ${JSON.stringify(order)}`);
 
-                if (order && order.status === "CONFIRMED") {
+                if (order) {
                     console.log(`Initiating delivery for order: ${orderId}`);
                     const deliveryResult = await createDeliveryForOrder(order);
 
