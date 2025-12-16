@@ -144,7 +144,7 @@ export async function createAirwayBill(data: CreateAirwayBillInput): Promise<Cre
 export async function createDeliveryForOrder(order: Order) {
     // Map order to delivery input
     const input: CreateAirwayBillInput = {
-        destination: order.shippingCity || "Dubai",
+        destination: order.shippingState || "Dubai",
         goodsDescription: `Order #${order.orderNumber}`,
         numberOfPieces: 1,
         origin: "DXB",
@@ -201,6 +201,7 @@ export async function getTracking(awb: string) {
             body: JSON.stringify(payload),
             cache: 'no-store' // Ensure we get fresh data
         });
+        console.log(response, "tacking response");
 
         if (!response.ok) {
             throw new Error(`C3X API Error: ${response.statusText}`);
@@ -213,3 +214,35 @@ export async function getTracking(awb: string) {
         return null;
     }
 }
+
+export async function getAirwayBillLabel(awb: string) {
+    const payload = {
+        AirwayBillNumber: awb,
+        UserName: config.userName,
+        Password: config.password,
+        AccountNo: config.accountNo,
+        Country: config.country,
+    };
+
+    try {
+        const response = await fetch(`${config.baseUrl}/AirwayBillPDFFormat`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+            cache: 'no-store'
+        });
+
+        if (!response.ok) {
+            throw new Error(`C3X API Error: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        return result;
+    } catch (error) {
+        console.error("Failed to get airway bill label:", error);
+        return null;
+    }
+}
+

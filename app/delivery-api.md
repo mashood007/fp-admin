@@ -29,6 +29,19 @@ https://c3xapi.c3xpress.com/C3XService.svc/Tracking
 }
 ```
 
+### Curl Request
+```bash
+curl -X POST https://c3xapi.c3xpress.com/C3XService.svc/Tracking \
+  -H "Content-Type: application/json" \
+  -d '{
+  "TrackingAWB": "123456",
+  "UserName": "testuser",
+  "Password": "21c3xpress#",
+  "AccountNo": "99999",
+  "Country": "AE"
+}'
+```
+
 ### Output
 ```json
 {
