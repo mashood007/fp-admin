@@ -1,5 +1,7 @@
 // import { DeliveryOrder } from "@prisma/client";
 
+import { Order } from "@prisma/client";
+
 interface C3XConfig {
     baseUrl: string;
     userName: string;
@@ -24,17 +26,17 @@ interface CreateAirwayBillInput {
     productType: string;
     weight: number;
     // Receiver Details
-    receiversAddress1: string;
-    receiversAddress2: string;
-    receiversCity: string;
-    receiversSubCity?: string;
-    receiversCountry: string;
-    receiversCompany?: string;
+    receiversAddress1: string | null;
+    receiversAddress2: string | null;
+    receiversCity: string | null;
+    receiversSubCity?: string | null;
+    receiversCountry: string | null;
+    receiversCompany?: string | null;
     receiversContactPerson: string;
     receiversEmail: string;
     receiversGeoLocation?: string;
-    receiversMobile: string;
-    receiversPhone: string;
+    receiversMobile: string | null;
+    receiversPhone: string | null;
     receiversPinCode?: string;
     // Sender Details
     sendersAddress1: string;
@@ -139,7 +141,7 @@ export async function createAirwayBill(data: CreateAirwayBillInput): Promise<Cre
     }
 }
 
-export async function createDeliveryForOrder(order: any) {
+export async function createDeliveryForOrder(order: Order) {
     // Map order to delivery input
     const input: CreateAirwayBillInput = {
         destination: order.shippingCity || "Dubai",
@@ -154,9 +156,9 @@ export async function createDeliveryForOrder(order: any) {
         receiversAddress2: order.shippingAddress2,
         receiversCity: order.shippingCity,
         receiversCountry: order.shippingCountry,
-        receiversCompany: order.shippingCompany,
+        receiversCompany: order.shippingName,
         receiversContactPerson: order.shippingName,
-        receiversEmail: order.email,
+        receiversEmail: order.shippingEmail,
         receiversMobile: order.shippingPhone,
         receiversPhone: order.shippingPhone,
         receiversPinCode: order.shippingZip,
@@ -174,7 +176,7 @@ export async function createDeliveryForOrder(order: any) {
 
         // Shipment Details
         shipmentInvoiceCurrency: "AED",
-        shipmentInvoiceValue: order.total || 0,
+        shipmentInvoiceValue: order.totalAmount || 0,
         shipperReference: order.orderNumber || Date.now().toString(),
     };
 
