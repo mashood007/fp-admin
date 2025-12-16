@@ -20,6 +20,7 @@ interface Product {
   price: number;
   category: string | null;
   isActive: boolean;
+  availableStock: number;
   orderNumber: number;
   images: ProductImage[];
   createdAt: Date;
@@ -36,6 +37,9 @@ export default function ProductTable({ products }: ProductTableProps) {
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const [editingOrderValue, setEditingOrderValue] = useState<number>(0);
   const [savingOrderId, setSavingOrderId] = useState<string | null>(null);
+  const [editingStockId, setEditingStockId] = useState<string | null>(null);
+  const [editingStockValue, setEditingStockValue] = useState<number>(0);
+  const [savingStockId, setSavingStockId] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this product?")) {
@@ -95,6 +99,41 @@ export default function ProductTable({ products }: ProductTableProps) {
     }
   };
 
+  const startEditingStock = (productId: string, currentStock: number) => {
+    setEditingStockId(productId);
+    setEditingStockValue(currentStock);
+  };
+
+  const cancelEditingStock = () => {
+    setEditingStockId(null);
+    setEditingStockValue(0);
+  };
+
+  const saveStock = async (productId: string) => {
+    setSavingStockId(productId);
+    try {
+      const response = await fetch(`/api/products/${productId}/stock`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ availableStock: editingStockValue }),
+      });
+
+      if (response.ok) {
+        router.refresh();
+        setEditingStockId(null);
+        setEditingStockValue(0);
+      } else {
+        alert("Failed to update stock");
+      }
+    } catch (error) {
+      alert("An error occurred while updating stock");
+    } finally {
+      setSavingStockId(null);
+    }
+  };
+
   return (
     <div className="mt-8 flow-root">
       <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -120,6 +159,12 @@ export default function ProductTable({ products }: ProductTableProps) {
                     className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                   >
                     Images
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                  >
+                    Stock
                   </th>
                   <th
                     scope="col"
@@ -151,7 +196,7 @@ export default function ProductTable({ products }: ProductTableProps) {
                 {products.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={8}
                       className="px-3 py-8 text-center text-sm text-gray-500"
                     >
                       No products found. Create your first product to get
@@ -184,6 +229,39 @@ export default function ProductTable({ products }: ProductTableProps) {
                           </div>
                         ) : (
                           <span className="text-gray-400">No images</span>
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        {editingStockId === product.id ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              value={editingStockValue}
+                              onChange={(e) => setEditingStockValue(parseInt(e.target.value) || 0)}
+                              className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                              min="0"
+                            />
+                            <button
+                              onClick={() => saveStock(product.id)}
+                              disabled={savingStockId === product.id}
+                              className="text-green-600 hover:text-green-900 disabled:opacity-50"
+                            >
+                              ✓
+                            </button>
+                            <button
+                              onClick={cancelEditingStock}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => startEditingStock(product.id, product.availableStock)}
+                            className="text-indigo-600 hover:text-indigo-900 hover:underline"
+                          >
+                            {product.availableStock}
+                          </button>
                         )}
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">

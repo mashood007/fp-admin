@@ -65,6 +65,7 @@ export async function GET(request: NextRequest) {
       where,
       orderBy: {
         orderNumber: "asc",
+        name: "asc",
       },
       include: {
         images: {

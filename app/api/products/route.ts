@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
       where: whereClause,
       orderBy: {
         orderNumber: "asc",
+        name: "asc",
       },
       include: {
         images: {
