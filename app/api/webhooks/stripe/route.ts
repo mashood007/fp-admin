@@ -4,6 +4,7 @@ import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { createDeliveryForOrder } from "@/lib/delivery";
 import Stripe from "stripe";
+import { Order, OrderProduct } from "@prisma/client";
 
 // Disable body parsing for webhook - we need raw body
 export const runtime = 'nodejs';
@@ -166,8 +167,11 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
         // Initiate Delivery
         try {
-            const order = await prisma.order.findUnique({
+            const order: Order & { orderProducts: OrderProduct[] } | null = await prisma.order.findUnique({
                 where: { id: orderId },
+                include: {
+                    orderProducts: true,
+                },
             });
 
             if (order) {
@@ -322,14 +326,17 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
 
             // HERE IS THE PLACE WHERE WE WILL INITIATE DELIVERY
             try {
-                const order = await prisma.order.findUnique({
+                const order: Order & { orderProducts: OrderProduct[] } | null = await prisma.order.findUnique({
                     where: { id: orderId },
+                    include: {
+                        orderProducts: true,
+                    },
                 });
                 console.log(`order DATA: ${JSON.stringify(order)}`);
 
                 if (order) {
                     console.log(`Initiating delivery for order: ${orderId}`);
-                    const deliveryResult = await createDeliveryForOrder(order);
+                    const deliveryResult = await createDeliveryForOrder(order as Order & { orderProducts: OrderProduct[] });
 
                     await prisma.deliveryOrder.create({
                         data: {

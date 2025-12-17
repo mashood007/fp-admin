@@ -1,6 +1,6 @@
 // import { DeliveryOrder } from "@prisma/client";
 
-import { Order } from "@prisma/client";
+import { Order, OrderProduct } from "@prisma/client";
 
 interface C3XConfig {
     baseUrl: string;
@@ -141,12 +141,13 @@ export async function createAirwayBill(data: CreateAirwayBillInput): Promise<Cre
     }
 }
 
-export async function createDeliveryForOrder(order: Order) {
+export async function createDeliveryForOrder(order: Order & { orderProducts: OrderProduct[] }) {
+    const totalQuantity = order.orderProducts.reduce((acc, product) => acc + product.quantity, 0);
     // Map order to delivery input
     const input: CreateAirwayBillInput = {
         destination: order.shippingState || "Dubai",
-        goodsDescription: `Order #${order.orderNumber}`,
-        numberOfPieces: 1,
+        goodsDescription: `Perfumes`,
+        numberOfPieces: totalQuantity > 1 ? totalQuantity : 1,
         origin: "DXB",
         productType: "XPS",
         weight: 1, // Default weight
