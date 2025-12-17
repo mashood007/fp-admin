@@ -8,6 +8,9 @@ export async function createDeliveryAction(orderId: string) {
     try {
         const order = await prisma.order.findUnique({
             where: { id: orderId },
+            include: {
+                orderProducts: true,
+            },
         });
 
         if (!order) {
