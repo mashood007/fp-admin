@@ -28,8 +28,20 @@ export async function GET(request: NextRequest) {
       isActive: true, // Only return active products for store
     };
 
-    if (category && category !== "unisex") {
-      where.category = category;
+    if (category) {
+      if (category === "men") {
+        where.OR = [
+          { category: "men" },
+          { category: "unisex" },
+        ];
+      } else if (category === "women") {
+        where.OR = [
+          { category: "women" },
+          { category: "unisex" },
+        ];
+      } else {
+        where.category = category;
+      }
     }
 
     if (collectionId) {
