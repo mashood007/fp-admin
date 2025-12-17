@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       isActive: true, // Only return active products for store
     };
 
-    if (category) {
+    if (category && category !== "unisex") {
       where.category = category;
     }
 
