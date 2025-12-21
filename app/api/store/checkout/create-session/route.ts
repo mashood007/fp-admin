@@ -39,12 +39,7 @@ function verifyCustomerToken(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const tokenData = verifyCustomerToken(request);
-        if (!tokenData) {
-            return NextResponse.json(
-                { error: "Unauthorized" },
-                { status: 401, headers: corsHeaders() }
-            );
-        }
+        const isGuestCheckout = !tokenData;
 
         const body = await request.json();
         const { orderId, billingAddress } = body;
@@ -83,12 +78,23 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Verify order belongs to this customer
-        if (order.customerId !== tokenData.customerId) {
-            return NextResponse.json(
-                { error: "Unauthorized" },
-                { status: 403, headers: corsHeaders() }
-            );
+        // Verify order belongs to this customer (authenticated) or is a guest order
+        if (isGuestCheckout) {
+            // For guest orders, verify the customer is inactive (guest)
+            if (order.customer.isActive) {
+                return NextResponse.json(
+                    { error: "Unauthorized - guest order required" },
+                    { status: 403, headers: corsHeaders() }
+                );
+            }
+        } else {
+            // For authenticated orders, verify ownership
+            if (order.customerId !== tokenData.customerId) {
+                return NextResponse.json(
+                    { error: "Unauthorized" },
+                    { status: 403, headers: corsHeaders() }
+                );
+            }
         }
 
         // Create Stripe line items from order products
@@ -166,12 +172,17 @@ export async function POST(request: NextRequest) {
             stripeCouponId = coupon.id;
         }
 
+        // Create success URL - include email for guest orders
+        const successUrl = isGuestCheckout
+            ? `${storeFrontUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order=${order.orderNumber}&email=${encodeURIComponent(order.customer.email)}`
+            : `${storeFrontUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order=${order.orderNumber}`;
+
         // Create Stripe Checkout Session
         const sessionParams: any = {
             payment_method_types: ['card' as any],
             line_items: lineItems,
             mode: "payment",
-            success_url: `${storeFrontUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order=${order.orderNumber}`,
+            success_url: successUrl,
             cancel_url: `${storeFrontUrl}/checkout?canceled=true`,
             customer_email: order.customer.email,
             metadata: {
@@ -208,7 +219,7 @@ export async function POST(request: NextRequest) {
                 billingName: billingAddress.name,
                 billingEmail: billingAddress.email || order.customer.email,
                 billingAddress1: billingAddress.address1,
-                billingAddress2: billingAddress.address2,
+                billingAddress2: billingAddress.address2 || null,
                 billingCity: billingAddress.city,
                 billingState: billingAddress.state,
                 billingZip: billingAddress.zip,
@@ -222,7 +233,7 @@ export async function POST(request: NextRequest) {
                 billingName: billingAddress.name,
                 billingEmail: billingAddress.email || order.customer.email,
                 billingAddress1: billingAddress.address1,
-                billingAddress2: billingAddress.address2,
+                billingAddress2: billingAddress.address2 || null,
                 billingCity: billingAddress.city,
                 billingState: billingAddress.state,
                 billingZip: billingAddress.zip,

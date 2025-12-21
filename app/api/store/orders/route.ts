@@ -117,12 +117,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const tokenData = verifyCustomerToken(request);
-    if (!tokenData) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401, headers: corsHeaders() }
-      );
-    }
+    const isGuestOrder = !tokenData;
 
     const body = await request.json();
     const {
@@ -146,16 +141,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get customer details
-    const customer = await prisma.customerUser.findUnique({
-      where: { id: tokenData.customerId },
-    });
+    let customer;
 
-    if (!customer) {
-      return NextResponse.json(
-        { error: "Customer not found" },
-        { status: 404, headers: corsHeaders() }
-      );
+    if (isGuestOrder) {
+      // Create a guest customer record
+      customer = await prisma.customerUser.create({
+        data: {
+          email: shippingAddress.email || `guest-${Date.now()}@example.com`,
+          name: shippingAddress.name,
+          phone: shippingAddress.phone,
+          shippingAddress1: shippingAddress.address1,
+          shippingAddress2: shippingAddress.address2,
+          shippingCity: shippingAddress.city,
+          shippingState: shippingAddress.state,
+          shippingZip: shippingAddress.zip,
+          shippingCountry: shippingAddress.country,
+          isActive: false, // Mark as inactive guest customer
+        },
+      });
+    } else {
+      // Get authenticated customer details
+      customer = await prisma.customerUser.findUnique({
+        where: { id: tokenData.customerId },
+      });
+
+      if (!customer) {
+        return NextResponse.json(
+          { error: "Customer not found" },
+          { status: 404, headers: corsHeaders() }
+        );
+      }
     }
 
     // Validate and get products
@@ -304,6 +319,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       message: "Order created successfully",
       order: completeOrder,
+      isGuestOrder,
     }, { headers: corsHeaders() });
 
   } catch (error) {
