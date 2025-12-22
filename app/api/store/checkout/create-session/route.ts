@@ -177,6 +177,23 @@ export async function POST(request: NextRequest) {
             ? `${storeFrontUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order=${order.orderNumber}&email=${encodeURIComponent(order.customer.email)}`
             : `${storeFrontUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order=${order.orderNumber}`;
 
+        // Find or create Stripe customer
+        let stripeCustomerId: string | undefined;
+        const customers = await stripe.customers.list({
+            email: order.customer.email,
+            limit: 1,
+        });
+
+        if (customers.data.length > 0) {
+            stripeCustomerId = customers.data[0].id;
+        } else {
+            const newCustomer = await stripe.customers.create({
+                email: order.customer.email,
+                name: billingAddress.name,
+            });
+            stripeCustomerId = newCustomer.id;
+        }
+
         // Create Stripe Checkout Session
         const sessionParams: any = {
             payment_method_types: ['card' as any],
@@ -184,7 +201,7 @@ export async function POST(request: NextRequest) {
             mode: "payment",
             success_url: successUrl,
             cancel_url: `${storeFrontUrl}/checkout?canceled=true`,
-            customer_email: order.customer.email,
+            customer: stripeCustomerId, // Associate customer with session
             metadata: {
                 orderId: order.id,
                 orderNumber: order.orderNumber,

@@ -315,14 +315,14 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
             });
 
             // Decrease stock for each product in the order
-            for (const orderProduct of orderProducts) {
-                // Use raw SQL to update stock to avoid TypeScript issues
-                await tx.$executeRaw`
-                    UPDATE products
-                    SET "availableStock" = GREATEST(0, "availableStock" - ${orderProduct.quantity})
-                    WHERE id = ${orderProduct.productId}
-                `;
-            }
+            // for (const orderProduct of orderProducts) {
+            //     // Use raw SQL to update stock to avoid TypeScript issues
+            //     await tx.$executeRaw`
+            //         UPDATE products
+            //         SET "availableStock" = GREATEST(0, "availableStock" - ${orderProduct.quantity})
+            //         WHERE id = ${orderProduct.productId}
+            //     `;
+            // }
 
             // HERE IS THE PLACE WHERE WE WILL INITIATE DELIVERY
             try {
