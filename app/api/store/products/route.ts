@@ -79,7 +79,17 @@ export async function GET(request: NextRequest) {
         { orderNumber: "asc" },
         { name: "asc" },
       ],
-      include: {
+      select: {
+        id: true,
+        friendlyId: true,
+        name: true,
+        description: true,
+        price: true,
+        category: true,
+        isActive: true,
+        availableStock: true,
+        createdAt: true,
+        updatedAt: true,
         images: {
           orderBy: {
             order: "asc",
