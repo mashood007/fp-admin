@@ -9,6 +9,7 @@ import {
   RectangleStackIcon,
   ClipboardDocumentListIcon,
   TagIcon,
+  SpeakerWaveIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
@@ -21,6 +22,7 @@ const navigation = [
   { name: "Products", href: "/products", icon: ShoppingBagIcon },
   { name: "Collections", href: "/collections", icon: RectangleStackIcon },
   { name: "Coupons", href: "/coupons", icon: TagIcon },
+  { name: "Banners", href: "/banners", icon: SpeakerWaveIcon },
 ];
 
 function classNames(...classes: string[]) {
