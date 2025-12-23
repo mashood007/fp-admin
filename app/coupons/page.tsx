@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { Switch } from "@headlessui/react";
 export const dynamic = 'force-dynamic';
 
 interface Coupon {
@@ -55,6 +56,28 @@ export default function CouponsPage() {
             if (!response.ok) {
                 const data = await response.json();
                 throw new Error(data.error || "Failed to delete coupon");
+            }
+
+            // Refresh coupon list
+            fetchCoupons();
+        } catch (err) {
+            alert(err instanceof Error ? err.message : "An error occurred");
+        }
+    };
+
+    const handleToggle = async (id: string, currentActive: boolean) => {
+        try {
+            const response = await fetch(`/api/coupons/${id}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ isActive: !currentActive }),
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || "Failed to update coupon");
             }
 
             // Refresh coupon list
@@ -140,6 +163,12 @@ export default function CouponsPage() {
                                             scope="col"
                                             className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                                         >
+                                            Active
+                                        </th>
+                                        <th
+                                            scope="col"
+                                            className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                                        >
                                             Uses
                                         </th>
                                         <th
@@ -154,7 +183,7 @@ export default function CouponsPage() {
                                     {coupons.length === 0 ? (
                                         <tr>
                                             <td
-                                                colSpan={7}
+                                                colSpan={8}
                                                 className="px-3 py-8 text-center text-sm text-gray-500"
                                             >
                                                 No coupons found. Create your first coupon to get started!
@@ -191,6 +220,22 @@ export default function CouponsPage() {
                                                     >
                                                         {coupon.isExpired ? "Expired" : !coupon.isActive ? "Inactive" : "Active"}
                                                     </span>
+                                                </td>
+                                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                                    <Switch
+                                                        checked={coupon.isActive}
+                                                        onChange={() => handleToggle(coupon.id, coupon.isActive)}
+                                                        disabled={coupon.isExpired}
+                                                        className={`${
+                                                            coupon.isActive && !coupon.isExpired ? "bg-indigo-600" : "bg-gray-200"
+                                                        } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                    >
+                                                        <span
+                                                            className={`${
+                                                                coupon.isActive && !coupon.isExpired ? "translate-x-6" : "translate-x-1"
+                                                            } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                                                        />
+                                                    </Switch>
                                                 </td>
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                                     {coupon._count.orders}
