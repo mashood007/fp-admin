@@ -135,6 +135,7 @@ model Order {
   // Invoice information
   invoiceId     String?
   invoiceUrl    String?
+  invoiceNumber String?
   
   // Relations
   orderProducts OrderProduct[]

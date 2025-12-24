@@ -1,0 +1,265 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import jsPDF from "jspdf";
+
+export async function POST(
+    request: NextRequest,
+    { params }: { params: { orderId: string } }
+) {
+    try {
+        const { orderId } = params;
+
+        const order = await prisma.order.findUnique({
+            where: { id: orderId },
+            include: {
+                customer: true,
+                orderProducts: true,
+                checkout: true,
+                coupon: true,
+            },
+        });
+
+        if (!order) {
+            return NextResponse.json(
+                { error: "Order not found" },
+                { status: 404 }
+            );
+        }
+
+        // Check if invoice number already exists, otherwise generate and save it
+        let invoiceNumber = (order as any).invoiceNumber;
+        if (!invoiceNumber) {
+            // Find all existing invoice numbers
+            const allOrders = await prisma.order.findMany({
+                select: {
+                    invoiceNumber: true
+                } as any
+            });
+
+            // Extract numeric values from existing invoice numbers
+            const existingInvoiceNumbers = allOrders
+                .map(o => (o as any).invoiceNumber)
+                .filter((invNum): invNum is string => typeof invNum === 'string')
+                .map(invNum => {
+                    // Handle both "001" and "2025-001" formats - extract the last numeric part
+                    const parts = invNum.split('-');
+                    const lastPart = parts[parts.length - 1];
+                    return parseInt(lastPart, 10) || 0;
+                })
+                .filter(n => !isNaN(n) && n > 0);
+
+            // Get the next invoice number
+            let nextNumber = 1;
+            if (existingInvoiceNumbers.length > 0) {
+                const maxNumber = Math.max(...existingInvoiceNumbers);
+                nextNumber = maxNumber + 1;
+            }
+
+            // Format with at least 3 digits (001, 002, etc.)
+            invoiceNumber = nextNumber.toString().padStart(3, '0');
+
+            // Save the invoice number to the database
+            await prisma.order.update({
+                where: { id: orderId },
+                data: { invoiceNumber } as any,
+            });
+        }
+
+        // Generate PDF
+        const pdfBuffer = await generateInvoicePDF(order, invoiceNumber);
+
+        // Return PDF directly as download
+        return new NextResponse(new Uint8Array(pdfBuffer), {
+            headers: {
+                'Content-Type': 'application/pdf',
+                'Content-Disposition': `attachment; filename="invoice-${invoiceNumber}.pdf"`,
+            },
+        });
+
+    } catch (error) {
+        console.error("Error generating invoice:", error);
+        return NextResponse.json(
+            { error: "Failed to generate invoice" },
+            { status: 500 }
+        );
+    }
+}
+
+async function generateInvoicePDF(order: any, invoiceNumber: string): Promise<Buffer> {
+    const doc = new jsPDF();
+
+    // Set up margins and positions
+    const marginLeft = 20;
+    const pageWidth = 210; // A4 width in mm
+    const rightAlign = pageWidth - 20; // Right margin
+    let yPosition = 20;
+
+    // Header - "Invoice"
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Invoice', marginLeft, yPosition);
+    yPosition += 15;
+
+    // Invoice details (left side)
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    const invoiceLabel = 'Invoice number ';
+    doc.text(invoiceLabel, marginLeft, yPosition);
+    // Calculate width of the label to position the bold invoice number
+    const labelWidth = doc.getTextWidth(invoiceLabel);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`INV-${invoiceNumber}`, marginLeft + labelWidth, yPosition);
+    doc.setFont('helvetica', 'normal'); // Reset to normal for next line
+    yPosition += 5;
+    
+    const issueDate = order.createdAt.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    doc.text(`Date of issue ${issueDate}`, marginLeft, yPosition);
+    yPosition += 10;
+
+    // Company Details (left column)
+    doc.setFont('helvetica', 'bold');
+    doc.text('Azizia International - F.Z.E', marginLeft, yPosition);
+    yPosition += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.text('B.C. 1305762', marginLeft, yPosition);
+    yPosition += 5;
+    doc.text('Ajman freezone C1 building, Ajman freezone', marginLeft, yPosition);
+    yPosition += 5;
+    doc.text('United Arab Emirates', marginLeft, yPosition);
+    yPosition += 5;
+    doc.text('971 55 774 4785', marginLeft, yPosition);
+    yPosition += 15;
+
+    // Bill to
+    doc.setFont('helvetica', 'bold');
+    doc.text('Bill to', marginLeft, yPosition);
+    yPosition += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.text(order.checkout?.billingName || order.customer.name, marginLeft, yPosition);
+    yPosition += 5;
+    doc.text(order.checkout?.billingEmail || order.customer.email, marginLeft, yPosition);
+    yPosition += 5;
+
+    // Full billing address
+    if (order.checkout?.billingAddress1) {
+        doc.text(order.checkout.billingAddress1, marginLeft, yPosition);
+        yPosition += 5;
+    }
+    if (order.checkout?.billingAddress2) {
+        doc.text(order.checkout.billingAddress2, marginLeft, yPosition);
+        yPosition += 5;
+    }
+
+    // City, State, Zip
+    const cityStateZip = [
+        order.checkout?.billingCity,
+        order.checkout?.billingState,
+        order.checkout?.billingZip
+    ].filter(Boolean).join(', ');
+
+    if (cityStateZip) {
+        doc.text(cityStateZip, marginLeft, yPosition);
+        yPosition += 5;
+    }
+
+    // Country
+    if (order.checkout?.billingCountry) {
+        doc.text(order.checkout.billingCountry, marginLeft, yPosition);
+        yPosition += 5;
+    }
+
+    yPosition += 10;
+
+    // Total amount (right side, bold)
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    const totalAmountText = `AED${order.totalAmount.toFixed(2)}`;
+    doc.text(totalAmountText, rightAlign, yPosition, { align: 'right' });
+    yPosition += 15;
+
+    // Table Header
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    const tableY = yPosition;
+    
+    // Column positions
+    const col1 = marginLeft; // Description
+    const col2 = 120; // Qty
+    const col3 = 145; // Unit price
+    const col4 = rightAlign; // Amount
+    
+    doc.text('Description', col1, tableY);
+    doc.text('Qty', col2, tableY);
+    doc.text('Unit price', col3, tableY);
+    doc.text('Amount', col4, tableY, { align: 'right' });
+    
+    // Draw line under header
+    doc.setLineWidth(0.5);
+    doc.line(marginLeft, tableY + 2, rightAlign, tableY + 2);
+    yPosition = tableY + 8;
+
+    // Products
+    doc.setFont('helvetica', 'normal');
+    order.orderProducts.forEach((item: any) => {
+        doc.text(`${item.productName} (x${item.quantity})`, col1, yPosition);
+        doc.text(item.quantity.toString(), col2, yPosition);
+        doc.text(`AED ${item.unitPrice.toFixed(2)}`, col3, yPosition);
+        doc.text(`AED ${(item.unitPrice * item.quantity).toFixed(2)}`, col4, yPosition, { align: 'right' });
+        yPosition += 6;
+    });
+
+    // Shipping
+    if (order.shippingCost > 0) {
+        doc.text('Shipping Cost', col1, yPosition);
+        doc.text('1', col2, yPosition);
+        doc.text(`AED ${order.shippingCost.toFixed(2)}`, col3, yPosition);
+        doc.text(`AED ${order.shippingCost.toFixed(2)}`, col4, yPosition, { align: 'right' });
+        yPosition += 6;
+    }
+
+    // Tax
+    if (order.taxAmount > 0) {
+        doc.text('Tax', col1, yPosition);
+        doc.text('1', col2, yPosition);
+        doc.text(`AED ${order.taxAmount.toFixed(2)}`, col3, yPosition);
+        doc.text(`AED ${order.taxAmount.toFixed(2)}`, col4, yPosition, { align: 'right' });
+        yPosition += 6;
+    }
+
+    // Discount
+    if (order.discountAmount > 0) {
+        doc.text(`Discount ${order.couponCode || 'MSF65'}`, col1, yPosition);
+        doc.text('1', col2, yPosition);
+        doc.text('-', col3, yPosition);
+        doc.text(`AED -${order.discountAmount.toFixed(2)}`, col4, yPosition, { align: 'right' });
+        yPosition += 10;
+    } else {
+        yPosition += 6;
+    }
+
+    // Totals section (right-aligned)
+    const totalLabelX = 130;
+    const totalValueX = col4;
+
+    // Subtotal
+    doc.text('Subtotal', totalLabelX, yPosition);
+    doc.text(`AED ${(order.subtotal + order.shippingCost + order.taxAmount - order.discountAmount).toFixed(2)}`, totalValueX, yPosition, { align: 'right' });
+    yPosition += 6;
+
+    // Total
+    doc.setFont('helvetica', 'bold');
+    doc.text('Total', totalLabelX, yPosition);
+    doc.text(`AED ${order.totalAmount.toFixed(2)}`, totalValueX, yPosition, { align: 'right' });
+    yPosition += 6;
+
+    // Amount paid
+    doc.text('Amount paid', totalLabelX, yPosition);
+    doc.text(`AED ${order.totalAmount.toFixed(2)}`, totalValueX, yPosition, { align: 'right' });
+
+    // Return PDF as buffer
+    return Buffer.from(doc.output('arraybuffer'));
+}

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { format } from "date-fns";
 import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/20/solid";
-import CreateInvoiceButton from "@/components/CreateInvoiceButton";
+import GenerateInvoiceButton from "@/components/GenerateInvoiceButton";
 import CreateDeliveryButton from "@/components/CreateDeliveryButton";
 import DeliveryTracking from "@/components/DeliveryTracking";
 import DownloadAirwayBillButton from "@/components/DownloadAirwayBillButton";
@@ -99,7 +99,7 @@ export default async function OrderDetailPage({ params }: { params: { orderId: s
                     </div>
                 ) : (
                     <div className="mt-5 flex lg:ml-4 lg:mt-0">
-                        <CreateInvoiceButton orderId={order.id} />
+                        <GenerateInvoiceButton orderId={order.id} />
                     </div>
                 )}
             </div>
