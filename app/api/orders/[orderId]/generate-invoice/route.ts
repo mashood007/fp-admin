@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import jsPDF from "jspdf";
+import fs from "fs";
+import path from "path";
 
 export async function POST(
     request: NextRequest,
@@ -94,6 +96,31 @@ async function generateInvoicePDF(order: any, invoiceNumber: string): Promise<Bu
     const rightAlign = pageWidth - 20; // Right margin
     let yPosition = 20;
 
+    // Add watermark
+    try {
+        const logoPath = path.join(process.cwd(), 'public', 'logos', 'logo2.png');
+        const logoBuffer = fs.readFileSync(logoPath);
+        const logoBase64 = `data:image/png;base64,${logoBuffer.toString('base64')}`;
+
+        // Add watermark in the center with reduced opacity
+        const imgWidth = 80; // Width in mm
+        const imgHeight = 80; // Height in mm
+        const xPos = (pageWidth - imgWidth) / 2;
+        const yPos = 120; // Center vertically
+
+        // Set global alpha for transparency (watermark effect)
+        // @ts-ignore - Using jsPDF internal API for opacity
+        doc.saveGraphicsState();
+        // @ts-ignore - Using jsPDF internal API for opacity
+        doc.setGState(new (doc as any).GState({ opacity: 0.1 }));
+        doc.addImage(logoBase64, 'PNG', xPos, yPos, imgWidth, imgHeight);
+        // @ts-ignore - Using jsPDF internal API for opacity
+        doc.restoreGraphicsState();
+    } catch (error) {
+        console.error('Error adding watermark:', error);
+        // Continue without watermark if there's an error
+    }
+
     // Header - "Invoice"
     doc.setFontSize(24);
     doc.setFont('helvetica', 'bold');
@@ -111,7 +138,7 @@ async function generateInvoicePDF(order: any, invoiceNumber: string): Promise<Bu
     doc.text(`INV-${invoiceNumber}`, marginLeft + labelWidth, yPosition);
     doc.setFont('helvetica', 'normal'); // Reset to normal for next line
     yPosition += 5;
-    
+
     const issueDate = order.createdAt.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
@@ -185,18 +212,18 @@ async function generateInvoicePDF(order: any, invoiceNumber: string): Promise<Bu
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     const tableY = yPosition;
-    
+
     // Column positions
     const col1 = marginLeft; // Description
     const col2 = 120; // Qty
     const col3 = 145; // Unit price
     const col4 = rightAlign; // Amount
-    
+
     doc.text('Description', col1, tableY);
     doc.text('Qty', col2, tableY);
     doc.text('Unit price', col3, tableY);
     doc.text('Amount', col4, tableY, { align: 'right' });
-    
+
     // Draw line under header
     doc.setLineWidth(0.5);
     doc.line(marginLeft, tableY + 2, rightAlign, tableY + 2);
