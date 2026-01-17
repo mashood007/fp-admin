@@ -84,24 +84,10 @@ export default async function OrderDetailPage({ params }: { params: { orderId: s
                         </div>
                     </div>
                 </div>
-                {order.invoiceUrl ? (
-                    <div className="mt-5 flex lg:ml-4 lg:mt-0">
-                        <span className="hidden sm:block">
-                            <a
-                                href={order.invoiceUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-                            >
-                                Download Invoice
-                            </a>
-                        </span>
-                    </div>
-                ) : (
-                    <div className="mt-5 flex lg:ml-4 lg:mt-0">
-                        <GenerateInvoiceButton orderId={order.id} />
-                    </div>
-                )}
+
+                <div className="mt-5 flex lg:ml-4 lg:mt-0">
+                    <GenerateInvoiceButton orderId={order.id} />
+                </div>
             </div>
 
             <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
