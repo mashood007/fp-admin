@@ -154,6 +154,8 @@ async function generateInvoicePDF(order: any, invoiceNumber: string): Promise<Bu
     doc.setFont('helvetica', 'normal');
     doc.text('B.C. 1305762', marginLeft, yPosition);
     yPosition += 5;
+    doc.text('Tax Registration No: 105178904600003', marginLeft, yPosition);
+    yPosition += 5;
     doc.text('Ajman freezone C1 building, Ajman freezone', marginLeft, yPosition);
     yPosition += 5;
     doc.text('United Arab Emirates', marginLeft, yPosition);
