@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
         // Shipping is free for orders >= 250 AED (after discount), otherwise 15 AED
         // Validate shipping cost calculation
         const taxableAmount = order.subtotal - order.discountAmount;
-        const expectedShippingCost = taxableAmount >= 250 ? 0 : 15;
+        const expectedShippingCost = taxableAmount >= 200 ? 0 : 15;
 
         console.log(`Order ${order.orderNumber} shipping debug:`, {
             subtotal: order.subtotal,

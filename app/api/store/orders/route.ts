@@ -250,7 +250,7 @@ export async function POST(request: NextRequest) {
 
     // Calculate shipping cost: Free for orders >= 250 AED, otherwise 15 AED
     // Shipping is calculated based on taxable amount (after discount)
-    const shippingCost = taxableAmount >= 250 ? 0 : 15;
+    const shippingCost = taxableAmount >= 200 ? 0 : 15;
 
     const taxAmount = (taxableAmount) * 0.05; // 5% VAT on taxable amount + shipping
     const discountAmount = couponDiscount;
