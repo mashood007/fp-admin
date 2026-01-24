@@ -10,6 +10,9 @@ interface ProductFormData {
   name: string;
   description: string;
   price: number;
+  originalPrice?: number;
+  notes?: string;
+  size?: string;
   category: string;
   isActive: boolean;
 }
@@ -44,6 +47,9 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
             name: product.name,
             description: product.description || "",
             price: product.price,
+            originalPrice: product.originalPrice || undefined,
+            notes: product.notes || "",
+            size: product.size || "",
             category: product.category || "",
             isActive: product.isActive,
           });
@@ -227,6 +233,64 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                       {errors.price.message}
                     </p>
                   )}
+                </div>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label
+                  htmlFor="originalPrice"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Original Price
+                </label>
+                <div className="mt-1">
+                  <input
+                    type="number"
+                    step="0.01"
+                    {...register("originalPrice", {
+                      min: { value: 0, message: "Original price must be positive" },
+                    })}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  />
+                  {errors.originalPrice && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.originalPrice.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label
+                  htmlFor="size"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Size
+                </label>
+                <div className="mt-1">
+                  <input
+                    type="text"
+                    {...register("size")}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    placeholder="e.g., 50ml, 100ml"
+                  />
+                </div>
+              </div>
+
+              <div className="sm:col-span-6">
+                <label
+                  htmlFor="notes"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Notes
+                </label>
+                <div className="mt-1">
+                  <textarea
+                    {...register("notes")}
+                    rows={3}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    placeholder="Additional notes about the product"
+                  />
                 </div>
               </div>
 

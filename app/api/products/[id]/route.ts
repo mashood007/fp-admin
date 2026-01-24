@@ -51,7 +51,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, description, price, category, isActive, images } = body;
+    const { name, description, price, originalPrice, notes, size, category, isActive, images } = body;
 
     if (!name || price === undefined) {
       return NextResponse.json(
@@ -79,6 +79,9 @@ export async function PUT(
         friendlyId,
         description: description || null,
         price: parseFloat(price),
+        originalPrice: originalPrice ? parseFloat(originalPrice) : null,
+        notes: notes || null,
+        size: size || null,
         category: category || null,
         isActive: isActive ?? true,
         images: {

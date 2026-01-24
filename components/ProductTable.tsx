@@ -18,6 +18,9 @@ interface Product {
   name: string;
   description: string | null;
   price: number;
+  originalPrice: number | null;
+  notes: string | null;
+  size: string | null;
   category: string | null;
   isActive: boolean;
   availableStock: number;
@@ -158,6 +161,18 @@ export default function ProductTable({ products }: ProductTableProps) {
                     scope="col"
                     className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                   >
+                    Original Price
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                  >
+                    Size
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                  >
                     Images
                   </th>
                   <th
@@ -196,7 +211,7 @@ export default function ProductTable({ products }: ProductTableProps) {
                 {products.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={8}
+                      colSpan={10}
                       className="px-3 py-8 text-center text-sm text-gray-500"
                     >
                       No products found. Create your first product to get
@@ -211,7 +226,19 @@ export default function ProductTable({ products }: ProductTableProps) {
                         <div className="text-xs text-gray-500 mt-1">/{product.friendlyId}</div>
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        ${product.price.toFixed(2)}
+                        {product.price.toFixed(2)}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        {product.originalPrice ? (
+                          <span className="line-through text-gray-400">
+                            {product.originalPrice.toFixed(2)}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        {product.size || "-"}
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                         {product.images && product.images.length > 0 ? (

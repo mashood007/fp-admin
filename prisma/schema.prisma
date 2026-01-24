@@ -27,7 +27,10 @@ model Product {
   friendlyId  String         @unique
   name        String
   description String?        @db.Text
+  notes       String?        @db.Text
+  size        String?
   price       Float
+  originalPrice Float?
   category       String?
   isActive       Boolean        @default(true)
   availableStock Int            @default(1)
