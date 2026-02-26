@@ -124,7 +124,7 @@ async function generateInvoicePDF(order: any, invoiceNumber: string): Promise<Bu
     // Header - "Invoice"
     doc.setFontSize(24);
     doc.setFont('helvetica', 'bold');
-    doc.text('TaxInvoice', pageWidth / 2, yPosition, { align: 'center' });
+    doc.text('Tax Invoice', pageWidth / 2, yPosition, { align: 'center' });
     yPosition += 15;
 
     // Invoice details (left side)
