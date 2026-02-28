@@ -216,15 +216,24 @@ async function generateInvoicePDF(order: any, invoiceNumber: string): Promise<Bu
     const tableY = yPosition;
 
     // Column positions
-    const col1 = marginLeft; // Description
-    const col2 = 120; // Qty
-    const col3 = 145; // Unit price
-    const col4 = rightAlign; // Amount
+    const col1 = marginLeft; // Description (20)
+    const col2 = 72;         // Qty
+    const col3 = 82;         // Unit price
+    const col4 = 102;        // Amount (Subtotal)
+    const col5 = 122;        // Discount
+    const col6 = 142;        // Taxable
+    const col7 = 165;        // Tax
+    const col8 = rightAlign; // Total
 
-    doc.text('Description', col1, tableY);
-    doc.text('Qty', col2, tableY);
-    doc.text('Unit price', col3, tableY);
-    doc.text('Amount', col4, tableY, { align: 'right' });
+    doc.setFontSize(8); // Use smaller font to fit more columns
+    doc.text('Desc', col1, tableY);
+    doc.text('Qty', col2 + 5, tableY, { align: 'right' });
+    doc.text('Unit Price', col3 + 18, tableY, { align: 'right' });
+    doc.text('Amount', col4 + 18, tableY, { align: 'right' });
+    doc.text('Discount', col5 + 18, tableY, { align: 'right' });
+    doc.text('Taxable', col6 + 18, tableY, { align: 'right' });
+    doc.text('Tax', col7 + 10, tableY, { align: 'right' });
+    doc.text('Total', col8, tableY, { align: 'right' });
 
     // Draw line under header
     doc.setLineWidth(0.5);
@@ -233,51 +242,81 @@ async function generateInvoicePDF(order: any, invoiceNumber: string): Promise<Bu
 
     // Products
     doc.setFont('helvetica', 'normal');
+    const subtotalForProportion = order.subtotal || 1; // Avoid division by zero
+
     order.orderProducts.forEach((item: any) => {
-        doc.text(`${item.productName} (x${item.quantity})`, col1, yPosition);
-        doc.text(item.quantity.toString(), col2, yPosition);
-        doc.text(`AED ${item.unitPrice.toFixed(2)}`, col3, yPosition);
-        doc.text(`AED ${(item.unitPrice * item.quantity).toFixed(2)}`, col4, yPosition, { align: 'right' });
-        yPosition += 6;
+        const amount = item.unitPrice * item.quantity;
+        const proportion = amount / subtotalForProportion;
+        const itemDiscount = (proportion * order.discountAmount) || 0;
+        const itemTaxableAmount = amount - itemDiscount;
+        const itemTax = (proportion * order.taxAmount) || 0;
+        const itemTotal = itemTaxableAmount + itemTax;
+
+        // Description
+        const descLines = doc.splitTextToSize(item.productName, 48);
+        doc.text(descLines, col1, yPosition);
+
+        // Data columns
+        doc.text(item.quantity.toString(), col2 + 5, yPosition, { align: 'right' });
+        doc.text(`${item.unitPrice.toFixed(2)}`, col3 + 18, yPosition, { align: 'right' });
+        doc.text(`${amount.toFixed(2)}`, col4 + 18, yPosition, { align: 'right' });
+        doc.text(`${itemDiscount.toFixed(2)}`, col5 + 18, yPosition, { align: 'right' });
+        doc.text(`${itemTaxableAmount.toFixed(2)}`, col6 + 18, yPosition, { align: 'right' });
+        doc.text(`${itemTax.toFixed(2)}`, col7 + 10, yPosition, { align: 'right' });
+        doc.text(`${itemTotal.toFixed(2)}`, col8, yPosition, { align: 'right' });
+
+        yPosition += Math.max(descLines.length * 4, 6);
     });
 
     // Shipping
     if (order.shippingCost > 0) {
         doc.text('Shipping Cost', col1, yPosition);
-        doc.text('1', col2, yPosition);
-        doc.text(`AED ${order.shippingCost.toFixed(2)}`, col3, yPosition);
-        doc.text(`AED ${order.shippingCost.toFixed(2)}`, col4, yPosition, { align: 'right' });
+        doc.text('1', col2 + 5, yPosition, { align: 'right' });
+        doc.text(`${order.shippingCost.toFixed(2)}`, col3 + 18, yPosition, { align: 'right' });
+        doc.text(`${order.shippingCost.toFixed(2)}`, col4 + 18, yPosition, { align: 'right' });
+        doc.text('0.00', col5 + 18, yPosition, { align: 'right' }); // No discount on shipping usually
+        doc.text(`${order.shippingCost.toFixed(2)}`, col6 + 18, yPosition, { align: 'right' });
+        doc.text('0.00', col7 + 10, yPosition, { align: 'right' }); // Assuming tax already covered or shown separately
+        doc.text(`${order.shippingCost.toFixed(2)}`, col8, yPosition, { align: 'right' });
+        yPosition += 6;
+    }
+
+    // summary space
+    yPosition += 4;
+    doc.setLineWidth(0.2);
+    doc.line(marginLeft, yPosition, rightAlign, yPosition);
+    yPosition += 8;
+
+    // Totals section (right-aligned)
+    doc.setFontSize(10);
+    const totalLabelX = 135;
+    const totalValueX = col8;
+
+    // Subtotal
+    doc.text('Subtotal', totalLabelX, yPosition);
+    doc.text(`AED ${order.subtotal.toFixed(2)}`, totalValueX, yPosition, { align: 'right' });
+    yPosition += 6;
+
+    // Discount
+    if (order.discountAmount > 0) {
+        doc.text('Discount', totalLabelX, yPosition);
+        doc.text(`-AED ${order.discountAmount.toFixed(2)}`, totalValueX, yPosition, { align: 'right' });
+        yPosition += 6;
+    }
+
+    // Shipping
+    if (order.shippingCost > 0) {
+        doc.text('Shipping', totalLabelX, yPosition);
+        doc.text(`AED ${order.shippingCost.toFixed(2)}`, totalValueX, yPosition, { align: 'right' });
         yPosition += 6;
     }
 
     // Tax
     if (order.taxAmount > 0) {
-        doc.text('Tax', col1, yPosition);
-        doc.text('1', col2, yPosition);
-        doc.text(`AED ${order.taxAmount.toFixed(2)}`, col3, yPosition);
-        doc.text(`AED ${order.taxAmount.toFixed(2)}`, col4, yPosition, { align: 'right' });
+        doc.text('Tax', totalLabelX, yPosition);
+        doc.text(`AED ${order.taxAmount.toFixed(2)}`, totalValueX, yPosition, { align: 'right' });
         yPosition += 6;
     }
-
-    // Discount
-    if (order.discountAmount > 0) {
-        doc.text(`Discount ${order.couponCode || 'MSF65'}`, col1, yPosition);
-        doc.text('1', col2, yPosition);
-        doc.text('-', col3, yPosition);
-        doc.text(`AED -${order.discountAmount.toFixed(2)}`, col4, yPosition, { align: 'right' });
-        yPosition += 10;
-    } else {
-        yPosition += 6;
-    }
-
-    // Totals section (right-aligned)
-    const totalLabelX = 130;
-    const totalValueX = col4;
-
-    // Subtotal
-    doc.text('Subtotal', totalLabelX, yPosition);
-    doc.text(`AED ${(order.subtotal + order.shippingCost + order.taxAmount - order.discountAmount).toFixed(2)}`, totalValueX, yPosition, { align: 'right' });
-    yPosition += 6;
 
     // Total
     doc.setFont('helvetica', 'bold');
@@ -286,6 +325,7 @@ async function generateInvoicePDF(order: any, invoiceNumber: string): Promise<Bu
     yPosition += 6;
 
     // Amount paid
+    doc.setFont('helvetica', 'normal');
     doc.text('Amount paid', totalLabelX, yPosition);
     doc.text(`AED ${order.totalAmount.toFixed(2)}`, totalValueX, yPosition, { align: 'right' });
 
