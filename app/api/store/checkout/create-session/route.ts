@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { stripe, STRIPE_CONFIG } from "@/lib/stripe";
 import jwt from "jsonwebtoken";
+import { calculateShippingCost, getDeliverySettingsConfig } from "@/lib/delivery-settings";
 
 // Add CORS headers for store-front access
 function corsHeaders() {
@@ -111,10 +112,11 @@ export async function POST(request: NextRequest) {
         }));
 
         // Add shipping cost if any
-        // Shipping is free for orders >= 250 AED (after discount), otherwise 15 AED
+        // Validate shipping cost against the current delivery settings.
         // Validate shipping cost calculation
         const taxableAmount = order.subtotal - order.discountAmount;
-        const expectedShippingCost = taxableAmount >= 200 ? 0 : 15;
+        const deliverySettings = await getDeliverySettingsConfig();
+        const expectedShippingCost = calculateShippingCost(taxableAmount, deliverySettings);
 
         console.log(`Order ${order.orderNumber} shipping debug:`, {
             subtotal: order.subtotal,

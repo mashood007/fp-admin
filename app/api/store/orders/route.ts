@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import jwt from "jsonwebtoken";
+import { calculateShippingCost, getDeliverySettingsConfig } from "@/lib/delivery-settings";
 
 // Add CORS headers for store-front access
 function corsHeaders() {
@@ -248,9 +249,9 @@ export async function POST(request: NextRequest) {
     // Calculate taxable amount first (after coupon discount)
     const taxableAmount = Math.max(0, subtotal - couponDiscount);
 
-    // Calculate shipping cost: Free for orders >= 250 AED, otherwise 15 AED
-    // Shipping is calculated based on taxable amount (after discount)
-    const shippingCost = taxableAmount >= 200 ? 0 : 15;
+    // Shipping is calculated from admin-configured delivery settings.
+    const deliverySettings = await getDeliverySettingsConfig();
+    const shippingCost = calculateShippingCost(taxableAmount, deliverySettings);
 
     const taxAmount = (taxableAmount) * 0.05; // 5% VAT on taxable amount + shipping
     const discountAmount = couponDiscount;
