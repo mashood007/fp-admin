@@ -117,8 +117,8 @@ export async function GET(request: NextRequest) {
 // POST /api/store/orders - Create new order
 export async function POST(request: NextRequest) {
   try {
-    const tokenData = verifyCustomerToken(request);
-    const isGuestOrder = !tokenData;
+    // const tokenData = verifyCustomerToken(request);
+    // const isGuestOrder = !tokenData;
 
     const body = await request.json();
     const {
@@ -142,13 +142,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let customer;
+    const customerEmail = shippingAddress.email;
+    const customerPhone = shippingAddress.phone;
+    const customerName = shippingAddress.name;
 
-    if (isGuestOrder) {
+    if (!customerName || !customerEmail || !customerPhone) {
+      return NextResponse.json(
+        { error: "Customer name, email, and phone are required" },
+        { status: 400, headers: corsHeaders() }
+      );
+    }
+    if (customerEmail) {
+      // return error if customerEmail is not valid
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(customerEmail)) {
+        return NextResponse.json(
+          { error: "Invalid email address" },
+          { status: 400, headers: corsHeaders() }
+        );
+      }
+    }
+
+    if (customerPhone) {
+      // return error if customerPhone is not valid uae number
+      const phoneRegex = /^(?:\+9715|05|5)\d{8}$/;
+      if (!phoneRegex.test(customerPhone)) {
+        return NextResponse.json(
+          { error: "Invalid phone number" },
+          { status: 400, headers: corsHeaders() }
+        );
+      }
+    }
+
+    let customer;
+    customer = await prisma.customerUser.findFirst({
+      where: {
+        OR: [
+          { email: customerEmail },
+          { phone: customerPhone },
+        ],
+      },
+    });
+
+    if (!customer) {
       // Create a guest customer record
       customer = await prisma.customerUser.create({
         data: {
-          email: shippingAddress.email || `guest-${Date.now()}@example.com`,
+          email: shippingAddress.email,
           name: shippingAddress.name,
           phone: shippingAddress.phone,
           shippingAddress1: shippingAddress.address1,
@@ -160,15 +200,9 @@ export async function POST(request: NextRequest) {
           isActive: false, // Mark as inactive guest customer
         },
       });
-    } else {
-      // Get authenticated customer details
-      customer = await prisma.customerUser.findUnique({
-        where: { id: tokenData.customerId },
-      });
-
       if (!customer) {
         return NextResponse.json(
-          { error: "Customer not found" },
+          { error: "Customer not able to create please contact admin" },
           { status: 404, headers: corsHeaders() }
         );
       }
@@ -320,7 +354,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       message: "Order created successfully",
       order: completeOrder,
-      isGuestOrder,
+      isGuestOrder: true,
     }, { headers: corsHeaders() });
 
   } catch (error) {
