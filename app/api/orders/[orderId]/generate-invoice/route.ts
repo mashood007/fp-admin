@@ -244,11 +244,29 @@ async function generateInvoicePDF(order: any, invoiceNumber: string): Promise<Bu
     doc.setFont('helvetica', 'normal');
     const subtotalForProportion = order.subtotal || 1; // Avoid division by zero
 
-    order.orderProducts.forEach((item: any) => {
+    for (const item of order.orderProducts) {
         const amount = item.unitPrice * item.quantity;
+
+        let itemDiscount = item.discountAmount;
+        let itemTaxableAmount = item.taxableAmount;
+
+        // If taxableAmount is zero, re-run logic and store it
+        if (!itemTaxableAmount || itemTaxableAmount === 0) {
+            const proportion = amount / subtotalForProportion;
+            itemDiscount = (proportion * order.discountAmount) || 0;
+            itemTaxableAmount = amount - itemDiscount;
+
+            // Store in DB for future use
+            await prisma.orderProduct.update({
+                where: { id: item.id },
+                data: {
+                    discountAmount: itemDiscount,
+                    taxableAmount: itemTaxableAmount
+                }
+            });
+        }
+
         const proportion = amount / subtotalForProportion;
-        const itemDiscount = (proportion * order.discountAmount) || 0;
-        const itemTaxableAmount = amount - itemDiscount;
         const itemTax = (proportion * order.taxAmount) || 0;
         const itemTotal = itemTaxableAmount + itemTax;
 
@@ -266,7 +284,7 @@ async function generateInvoicePDF(order: any, invoiceNumber: string): Promise<Bu
         doc.text(`${itemTotal.toFixed(2)}`, col8, yPosition, { align: 'right' });
 
         yPosition += Math.max(descLines.length * 4, 6);
-    });
+    }
 
     // Shipping
     if (order.shippingCost > 0) {
@@ -299,7 +317,7 @@ async function generateInvoicePDF(order: any, invoiceNumber: string): Promise<Bu
 
     // Discount
     if (order.discountAmount > 0) {
-        doc.text('Discount', totalLabelX, yPosition);
+        doc.text(`Coupon(${order.couponCode})`, totalLabelX, yPosition);
         doc.text(`-AED ${order.discountAmount.toFixed(2)}`, totalValueX, yPosition, { align: 'right' });
         yPosition += 6;
     }

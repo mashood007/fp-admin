@@ -167,6 +167,10 @@ model OrderProduct {
   quantity           Int
   subtotal           Float   // unitPrice * quantity
   
+  // Discount details
+  discountAmount Float   @default(0)
+  taxableAmount  Float   @default(0)
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

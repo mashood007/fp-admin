@@ -230,16 +230,23 @@ export async function POST(request: NextRequest) {
       const product = products.find(p => p.id === item.productId);
       if (!product) throw new Error("Product not found");
 
-      const itemSubtotal = product.price * item.quantity;
+      const itemPrice = product.originalPrice || product.price;
+      const totalPrice = itemPrice * item.quantity;
+      const discountedPrice = product.price
+      const afterDiscountAmount = discountedPrice * item.quantity
+      const discountAmount = totalPrice - afterDiscountAmount
+      const itemSubtotal = afterDiscountAmount;
       subtotal += itemSubtotal;
 
       return {
         productId: product.id,
         productName: product.name,
         productDescription: product.description,
-        unitPrice: product.price,
+        unitPrice: itemPrice,
         quantity: item.quantity,
         subtotal: itemSubtotal,
+        discountAmount: discountAmount,
+        taxableAmount: afterDiscountAmount,
       };
     });
 

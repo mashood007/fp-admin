@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "order_products" ADD COLUMN     "discountAmount" DOUBLE PRECISION NOT NULL DEFAULT 0,
+ADD COLUMN     "taxableAmount" DOUBLE PRECISION NOT NULL DEFAULT 0;
