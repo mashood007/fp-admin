@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
                     name: item.productName,
                     description: item.productDescription || undefined,
                 },
-                unit_amount: Math.round(item.unitPrice * 100), // Convert to cents
+                unit_amount: Math.round(item.taxableAmount * 100), // Convert to cents
             },
             quantity: item.quantity,
         }));

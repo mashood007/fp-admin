@@ -216,24 +216,26 @@ async function generateInvoicePDF(order: any, invoiceNumber: string): Promise<Bu
     const tableY = yPosition;
 
     // Column positions
-    const col1 = marginLeft; // Description (20)
-    const col2 = 72;         // Qty
-    const col3 = 82;         // Unit price
-    const col4 = 102;        // Amount (Subtotal)
-    const col5 = 122;        // Discount
-    const col6 = 142;        // Taxable
-    const col7 = 165;        // Tax
-    const col8 = rightAlign; // Total
+    const col1 = marginLeft; // Description
+    const col2 = 65;         // Qty
+    const col3 = 73;         // Unit price
+    const col4 = 90;         // Amount
+    const col5 = 108;        // Discount
+    const col6 = 126;        // Coupon
+    const col7 = 144;        // Taxable
+    const col8 = 162;        // Tax
+    const col9 = rightAlign; // Total
 
-    doc.setFontSize(8); // Use smaller font to fit more columns
+    doc.setFontSize(7); // Use smaller font to fit more columns
     doc.text('Desc', col1, tableY);
     doc.text('Qty', col2 + 5, tableY, { align: 'right' });
-    doc.text('Unit Price', col3 + 18, tableY, { align: 'right' });
-    doc.text('Amount', col4 + 18, tableY, { align: 'right' });
-    doc.text('Discount', col5 + 18, tableY, { align: 'right' });
-    doc.text('Taxable', col6 + 18, tableY, { align: 'right' });
-    doc.text('Tax', col7 + 10, tableY, { align: 'right' });
-    doc.text('Total', col8, tableY, { align: 'right' });
+    doc.text('Unit Price', col3 + 15, tableY, { align: 'right' });
+    doc.text('Amount', col4 + 16, tableY, { align: 'right' });
+    doc.text('Discount', col5 + 16, tableY, { align: 'right' });
+    doc.text('Coupon', col6 + 16, tableY, { align: 'right' });
+    doc.text('Taxable', col7 + 16, tableY, { align: 'right' });
+    doc.text('Tax', col8 + 10, tableY, { align: 'right' });
+    doc.text('Total', col9, tableY, { align: 'right' });
 
     // Draw line under header
     doc.setLineWidth(0.5);
@@ -244,44 +246,44 @@ async function generateInvoicePDF(order: any, invoiceNumber: string): Promise<Bu
     doc.setFont('helvetica', 'normal');
     const subtotalForProportion = order.subtotal || 1; // Avoid division by zero
 
+    const taxPercent = 0.05
     for (const item of order.orderProducts) {
         const amount = item.unitPrice * item.quantity;
+        // Use subtotal (which is price * quantity after product discount) as the base for coupon proportion
+        const proportion = item.subtotal / subtotalForProportion;
+        const itemCouponAmount = (proportion * (order.couponDiscount || 0)) || 0;
+        
+        let itemProductDiscount = item.discountAmount;
+        // Final taxable amount is subtotal minus the proportional coupon
+        let itemTaxableAmount = item.subtotal - itemCouponAmount;
 
-        let itemDiscount = item.discountAmount;
-        let itemTaxableAmount = item.taxableAmount;
-
-        // If taxableAmount is zero, re-run logic and store it
-        if (!itemTaxableAmount || itemTaxableAmount === 0) {
-            const proportion = amount / subtotalForProportion;
-            itemDiscount = (proportion * order.discountAmount) || 0;
-            itemTaxableAmount = amount - itemDiscount;
-
-            // Store in DB for future use
+        // If stored taxableAmount is zero, update it in DB
+        if (!item.taxableAmount || item.taxableAmount === 0) {
             await prisma.orderProduct.update({
                 where: { id: item.id },
                 data: {
-                    discountAmount: itemDiscount,
                     taxableAmount: itemTaxableAmount
                 }
             });
         }
 
-        const proportion = amount / subtotalForProportion;
-        const itemTax = (proportion * order.taxAmount) || 0;
+        // const proportion = amount / subtotalForProportion;
+        const itemTax = itemTaxableAmount * taxPercent
         const itemTotal = itemTaxableAmount + itemTax;
 
         // Description
-        const descLines = doc.splitTextToSize(item.productName, 48);
+        const descLines = doc.splitTextToSize(item.productName, 40);
         doc.text(descLines, col1, yPosition);
 
         // Data columns
         doc.text(item.quantity.toString(), col2 + 5, yPosition, { align: 'right' });
-        doc.text(`${item.unitPrice.toFixed(2)}`, col3 + 18, yPosition, { align: 'right' });
-        doc.text(`${amount.toFixed(2)}`, col4 + 18, yPosition, { align: 'right' });
-        doc.text(`${itemDiscount.toFixed(2)}`, col5 + 18, yPosition, { align: 'right' });
-        doc.text(`${itemTaxableAmount.toFixed(2)}`, col6 + 18, yPosition, { align: 'right' });
-        doc.text(`${itemTax.toFixed(2)}`, col7 + 10, yPosition, { align: 'right' });
-        doc.text(`${itemTotal.toFixed(2)}`, col8, yPosition, { align: 'right' });
+        doc.text(`${item.unitPrice.toFixed(2)}`, col3 + 15, yPosition, { align: 'right' });
+        doc.text(`${amount.toFixed(2)}`, col4 + 16, yPosition, { align: 'right' });
+        doc.text(`${itemProductDiscount.toFixed(2)}`, col5 + 16, yPosition, { align: 'right' });
+        doc.text(`${itemCouponAmount.toFixed(2)}`, col6 + 16, yPosition, { align: 'right' });
+        doc.text(`${itemTaxableAmount.toFixed(2)}`, col7 + 16, yPosition, { align: 'right' });
+        doc.text(`${itemTax.toFixed(2)}`, col8 + 10, yPosition, { align: 'right' });
+        doc.text(`${itemTotal.toFixed(2)}`, col9, yPosition, { align: 'right' });
 
         yPosition += Math.max(descLines.length * 4, 6);
     }
@@ -290,12 +292,13 @@ async function generateInvoicePDF(order: any, invoiceNumber: string): Promise<Bu
     if (order.shippingCost > 0) {
         doc.text('Shipping Cost', col1, yPosition);
         doc.text('1', col2 + 5, yPosition, { align: 'right' });
-        doc.text(`${order.shippingCost.toFixed(2)}`, col3 + 18, yPosition, { align: 'right' });
-        doc.text(`${order.shippingCost.toFixed(2)}`, col4 + 18, yPosition, { align: 'right' });
-        doc.text('0.00', col5 + 18, yPosition, { align: 'right' }); // No discount on shipping usually
-        doc.text(`${order.shippingCost.toFixed(2)}`, col6 + 18, yPosition, { align: 'right' });
-        doc.text('0.00', col7 + 10, yPosition, { align: 'right' }); // Assuming tax already covered or shown separately
-        doc.text(`${order.shippingCost.toFixed(2)}`, col8, yPosition, { align: 'right' });
+        doc.text(`${order.shippingCost.toFixed(2)}`, col3 + 15, yPosition, { align: 'right' });
+        doc.text(`${order.shippingCost.toFixed(2)}`, col4 + 16, yPosition, { align: 'right' });
+        doc.text('0.00', col5 + 16, yPosition, { align: 'right' });
+        doc.text('0.00', col6 + 16, yPosition, { align: 'right' });
+        doc.text(`${order.shippingCost.toFixed(2)}`, col7 + 16, yPosition, { align: 'right' });
+        doc.text('0.00', col8 + 10, yPosition, { align: 'right' });
+        doc.text(`${order.shippingCost.toFixed(2)}`, col9, yPosition, { align: 'right' });
         yPosition += 6;
     }
 
@@ -308,7 +311,7 @@ async function generateInvoicePDF(order: any, invoiceNumber: string): Promise<Bu
     // Totals section (right-aligned)
     doc.setFontSize(10);
     const totalLabelX = 135;
-    const totalValueX = col8;
+    const totalValueX = col9;
 
     // Subtotal
     doc.text('Subtotal', totalLabelX, yPosition);
