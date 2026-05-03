@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { createDeliveryForOrder } from "@/lib/delivery";
+import { sendOrderConfirmationEmail } from "@/lib/email";
 import Stripe from "stripe";
 import { Order, OrderProduct } from "@prisma/client";
 
@@ -188,6 +189,9 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
                     }
                 });
                 console.log(`Delivery initiated successfully. AWB: ${deliveryResult.AirwayBillNumber}`);
+
+                // Send order confirmation email
+                await sendOrderConfirmationEmail(order);
             }
         } catch (deliveryError) {
             console.error("Failed to initiate delivery:", deliveryError);
@@ -348,6 +352,9 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
                         }
                     });
                     console.log(`Delivery initiated successfully. AWB: ${deliveryResult.AirwayBillNumber}`);
+
+                    // Send order confirmation email
+                    await sendOrderConfirmationEmail(order as Order & { orderProducts: OrderProduct[] });
                 }
             } catch (deliveryError) {
                 console.error("Failed to initiate delivery:", deliveryError);
