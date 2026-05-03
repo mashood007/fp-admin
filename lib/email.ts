@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 import { Order, OrderProduct } from "@prisma/client";
 
-const resend = new Resend(process.env.RESEND_API_KEY || "re_9DHvHUyd_KaiZ57B11k6RTQjtnpQoVijy");
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendOrderConfirmationEmail(order: Order & { orderProducts: OrderProduct[] }) {
     try {
@@ -131,7 +131,7 @@ export async function sendOrderConfirmationEmail(order: Order & { orderProducts:
             subject: `Order Confirmation #${order.orderNumber}`,
             html: emailHtml,
         });
-        
+
         console.log(`Order confirmation email sent successfully to ${order.shippingEmail}`);
     } catch (emailError) {
         console.error("Error sending order confirmation email:", emailError);
