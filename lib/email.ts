@@ -17,7 +17,7 @@ export async function sendOrderConfirmationEmail(order: Order & { orderProducts:
         </tr>
         `).join('');
 
-        const emailHtml = \`<!DOCTYPE html>
+        const emailHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -43,8 +43,8 @@ export async function sendOrderConfirmationEmail(order: Order & { orderProducts:
                         <td style="padding: 40px 30px 20px 30px;">
                             <h1 style="margin: 0 0 15px 0; font-size: 24px; color: #111827; text-align: center;">Thank You for Your Order!</h1>
                             <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 1.6; color: #4b5563; text-align: center;">
-                                Hi \${order.shippingName || 'there'},\<br>
-                                We've received your order <strong>#\${order.orderNumber}</strong> and are getting it ready for shipment. We will send you an update when it has shipped.
+                                Hi ${order.shippingName || 'there'},<br>
+                                We've received your order <strong>#${order.orderNumber}</strong> and are getting it ready for shipment. We will send you an update when it has shipped.
                             </p>
                         </td>
                     </tr>
@@ -60,7 +60,7 @@ export async function sendOrderConfirmationEmail(order: Order & { orderProducts:
                     <tr>
                         <td style="padding: 10px 30px;">
                             <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                                \${orderItemsHtml}
+                                ${orderItemsHtml}
                             </table>
                         </td>
                     </tr>
@@ -71,19 +71,19 @@ export async function sendOrderConfirmationEmail(order: Order & { orderProducts:
                             <table width="100%" cellpadding="0" cellspacing="0" border="0">
                                 <tr>
                                     <td width="60%" style="padding: 5px 0; text-align: right; font-size: 14px; color: #6b7280;">Subtotal:</td>
-                                    <td width="40%" style="padding: 5px 0; text-align: right; font-size: 14px; color: #374151;">AED \${order.subtotal.toFixed(2)}</td>
+                                    <td width="40%" style="padding: 5px 0; text-align: right; font-size: 14px; color: #374151;">AED ${order.subtotal.toFixed(2)}</td>
                                 </tr>
                                 <tr>
                                     <td width="60%" style="padding: 5px 0; text-align: right; font-size: 14px; color: #6b7280;">Shipping:</td>
-                                    <td width="40%" style="padding: 5px 0; text-align: right; font-size: 14px; color: #374151;">AED \${order.shippingCost.toFixed(2)}</td>
+                                    <td width="40%" style="padding: 5px 0; text-align: right; font-size: 14px; color: #374151;">AED ${order.shippingCost.toFixed(2)}</td>
                                 </tr>
                                 <tr>
                                     <td width="60%" style="padding: 5px 0; text-align: right; font-size: 14px; color: #6b7280;">Tax:</td>
-                                    <td width="40%" style="padding: 5px 0; text-align: right; font-size: 14px; color: #374151;">AED \${order.taxAmount.toFixed(2)}</td>
+                                    <td width="40%" style="padding: 5px 0; text-align: right; font-size: 14px; color: #374151;">AED ${order.taxAmount.toFixed(2)}</td>
                                 </tr>
                                 <tr>
                                     <td width="60%" style="padding: 15px 0 5px 0; text-align: right; font-size: 18px; color: #111827; font-weight: bold;">Total:</td>
-                                    <td width="40%" style="padding: 15px 0 5px 0; text-align: right; font-size: 18px; color: #111827; font-weight: bold;">AED \${order.totalAmount.toFixed(2)}</td>
+                                    <td width="40%" style="padding: 15px 0 5px 0; text-align: right; font-size: 18px; color: #111827; font-weight: bold;">AED ${order.totalAmount.toFixed(2)}</td>
                                 </tr>
                             </table>
                         </td>
@@ -97,9 +97,9 @@ export async function sendOrderConfirmationEmail(order: Order & { orderProducts:
                                     <td width="50%" style="vertical-align: top;">
                                         <h3 style="margin: 0 0 10px 0; font-size: 14px; color: #111827; text-transform: uppercase; letter-spacing: 0.5px;">Shipping Address</h3>
                                         <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #4b5563;">
-                                            \${order.shippingName}<br>
-                                            \${order.shippingAddress1} \${order.shippingAddress2 ? '<br>' + order.shippingAddress2 : ''}<br>
-                                            \${order.shippingCity}, \${order.shippingState} \${order.shippingZip || ''}
+                                            ${order.shippingName}<br>
+                                            ${order.shippingAddress1} ${order.shippingAddress2 ? '<br>' + order.shippingAddress2 : ''}<br>
+                                            ${order.shippingCity}, ${order.shippingState} ${order.shippingZip || ''}
                                         </p>
                                     </td>
                                 </tr>
@@ -114,7 +114,7 @@ export async function sendOrderConfirmationEmail(order: Order & { orderProducts:
                                 Need help? Reply to this email or contact us at <a href="mailto:support@fleurdorparfums.com" style="color: #60a5fa; text-decoration: none;">support@fleurdorparfums.com</a>
                             </p>
                             <p style="margin: 0; font-size: 12px; color: #6b7280;">
-                                &copy; \${new Date().getFullYear()} Fleur d'or Parfums. All rights reserved.
+                                &copy; ${new Date().getFullYear()} Fleur d'or Parfums. All rights reserved.
                             </p>
                         </td>
                     </tr>
@@ -123,16 +123,16 @@ export async function sendOrderConfirmationEmail(order: Order & { orderProducts:
         </tr>
     </table>
 </body>
-</html>\`;
+</html>`;
 
         await resend.emails.send({
             from: 'Admin <admin@fleurdorparfums.com>',
             to: order.shippingEmail,
-            subject: \`Order Confirmation #\${order.orderNumber}\`,
+            subject: `Order Confirmation #${order.orderNumber}`,
             html: emailHtml,
         });
         
-        console.log(\`Order confirmation email sent successfully to \${order.shippingEmail}\`);
+        console.log(`Order confirmation email sent successfully to ${order.shippingEmail}`);
     } catch (emailError) {
         console.error("Error sending order confirmation email:", emailError);
     }
